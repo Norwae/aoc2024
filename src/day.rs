@@ -1,3 +1,5 @@
+use std::io::Write;
+
 mod day01;
 mod day02;
 mod day03;
@@ -31,6 +33,23 @@ mod day25;
         }
     };
 }
+#[macro_export] macro_rules! unparsed_simple_day {
+     (|$n:ident| $body:expr ) => {
+         struct D{}
+         impl crate::day::Day for D {
+             fn run(&self, $n: &str, output_channel: &mut dyn std::io::Write) {
+                 let result = $body;
+                 output_channel
+                    .write_fmt(format_args!("{} result: {}\n", module_path!(), result))
+                    .expect("Output okay");
+                 output_channel.flush().expect("Flushed okay")
+             }
+         }
+         pub fn register() -> Option<Box<dyn crate::day::Day>> {
+             Some(Box::new(D {}))
+         }
+     };
+ }
 
 pub const REGISTRY: [fn() -> Option<Box<dyn Day>>; 25] = [
     day01::register, day02::register, day03::register, day04::register, day05::register,
@@ -40,4 +59,6 @@ pub const REGISTRY: [fn() -> Option<Box<dyn Day>>; 25] = [
     day21::register, day22::register, day23::register, day24::register, day25::register
 ];
 
-pub trait Day {}
+pub trait Day {
+    fn run(&self, input: &str, output_channel: &mut dyn Write);
+}

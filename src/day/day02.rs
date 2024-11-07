@@ -1,3 +1,5 @@
 use crate::*;
 
-unimplemented_day!();
+unparsed_simple_day! { |str| {
+    format!("Mimimi {str}!")
+}}
