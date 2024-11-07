@@ -4,17 +4,16 @@ use std::io::{ErrorKind, stdout, Write};
 use std::mem::swap;
 use std::process::ExitCode;
 use std::rc::Rc;
-use std::sync::RwLock;
 use gtk4::{Application, ApplicationWindow, Grid, Box as LayoutBox, Orientation, CheckButton, Button, Label, Widget, StackSidebar, StackSwitcher, Stack, Separator, Text, TextView, TextBuffer, TextIter};
 use gtk4::glib;
 use gtk4::glib::*;
 use gtk4::prelude::*;
 
 use std::sync::mpsc;
-use std::sync::mpsc::{channel, Sender};
+use std::sync::mpsc::{channel, Receiver, Sender};
+use std::thread;
 
 use crate::AdventOfCode;
-use crate::day::Day;
 use crate::ui::UI;
 
 pub struct GtkUI;
@@ -107,11 +106,11 @@ fn build_day_selector_grid(model: Rc<RefCell<UIModel>>) -> Grid {
     grid
 }
 
-fn perform_run(model: Rc<RefCell<UIModel>>, send: Sender<String>) {
+fn perform_run(model: Rc<RefCell<UIModel>>) -> Receiver<String> {
+    let (send, recv) = channel();
     struct WrapSender(Sender<String>, Vec<u8>);
     impl Write for WrapSender {
         fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
-            dbg!(&buf);
             self.1.write(buf)
         }
 
@@ -122,15 +121,19 @@ fn perform_run(model: Rc<RefCell<UIModel>>, send: Sender<String>) {
             self.0.send(string).map_err(|e| std::io::Error::new(ErrorKind::BrokenPipe, e))
         }
     }
-    let mut send = WrapSender(send, Vec::new());
-    let model = model.borrow();
     for idx in 0..25 {
-        if let Some(uiday) = &model.days[idx] {
+        if let Some(uiday) = &model.borrow().days[idx] {
             if uiday.active {
-                uiday.handler.run(&uiday.input, &mut send)
+                let mut wrapper = WrapSender(send.clone(), Vec::new());
+                let handler = uiday.handler;
+                let input = uiday.input.clone();
+                thread::spawn(move ||{
+                    handler(&input, &mut wrapper)
+                });
             }
         }
     }
+    recv
 }
 
 fn build_big_run_button(model: Rc<RefCell<UIModel>>) -> Button {
@@ -140,8 +143,7 @@ fn build_big_run_button(model: Rc<RefCell<UIModel>>) -> Button {
 
     button.connect_clicked(
         move |b| {
-            let (send, _) = channel::<String>();
-            perform_run(model.clone(), send)
+            perform_run(model.clone());
         }
     );
 
@@ -176,7 +178,7 @@ impl GtkUI {
 struct UIDay {
     active: bool,
     input: String,
-    handler: Box<dyn Day>,
+    handler: fn (&str, &mut dyn Write),
 }
 
 struct UIModel {

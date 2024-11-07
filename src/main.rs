@@ -25,7 +25,7 @@ struct Cli {
 }
 
 struct AdventOfCode {
-    days: [Option<Box<dyn day::Day>>; 25],
+    days: [Option<fn (&str, &mut dyn std::io::Write)>; 25],
     inputs: [String; 25]
 }
 
