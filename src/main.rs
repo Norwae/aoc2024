@@ -51,9 +51,17 @@ impl AdventOfCode {
     }
 }
 
+
+static ALL_ACTIVE: [u8; 25] = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25];
+
 fn main() -> ExitCode {
     let Cli { input_path, run_days, ui_mode } = Cli::parse();
     let aoc = AdventOfCode::new(input_path);
     let ui = select_ui(ui_mode);
-    ui.run(run_days, aoc)
+    let preselected = if !run_days.is_empty() {
+        run_days.as_slice()
+    } else {
+        &ALL_ACTIVE
+    };
+    ui.run(preselected, aoc)
 }

@@ -43,7 +43,7 @@ mod day25;
              write!($out, "Running {}\n", module_path!())?;
              $out.flush()?;
              let result = $body;
-             write!($out, "Result: {result}\n")?;
+             write!($out, "Result for {}: {result}\n", module_path!())?;
              $out.flush()
          }
          fn do_solve(input: &str, writer: &mut dyn std::io::Write){

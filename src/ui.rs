@@ -14,7 +14,7 @@ pub enum UIMode {
     OptimizedHeadless
 }
 pub trait UI {
-    fn run(&self, preselected_days: Vec<u8>, aoc: AdventOfCode) -> ExitCode;
+    fn run(&self, preselected_days: &[u8], aoc: AdventOfCode) -> ExitCode;
 }
 
 pub fn select_ui(mode: UIMode) -> Box<dyn UI> {

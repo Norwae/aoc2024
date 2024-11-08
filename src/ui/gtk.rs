@@ -2,6 +2,7 @@ use std::cell::RefCell;
 use std::fmt::format;
 use std::io::{ErrorKind, stdout, Write};
 use std::mem::swap;
+use std::ops::Deref;
 use std::process::ExitCode;
 use std::rc::Rc;
 use gtk4::{Application, ApplicationWindow, Grid, Box as LayoutBox, Orientation, CheckButton, Button, Label, Widget, StackSidebar, StackSwitcher, Stack, Separator, Text, TextView, TextBuffer, TextIter};
@@ -9,9 +10,11 @@ use gtk4::glib;
 use gtk4::glib::*;
 use gtk4::prelude::*;
 
-use std::sync::mpsc;
-use std::sync::mpsc::{channel, Receiver, Sender};
+use std::sync::{Arc, mpsc};
+use std::sync::mpsc::{channel, Receiver, Sender, TryRecvError};
 use std::thread;
+use std::time::Duration;
+use gtk4::ffi::GtkTextBuffer;
 
 use crate::AdventOfCode;
 use crate::ui::UI;
@@ -106,8 +109,7 @@ fn build_day_selector_grid(model: Rc<RefCell<UIModel>>) -> Grid {
     grid
 }
 
-fn perform_run(model: Rc<RefCell<UIModel>>) -> Receiver<String> {
-    let (send, recv) = channel();
+fn perform_run(model: Rc<RefCell<UIModel>>, sender: Sender<String>)  {
     struct WrapSender(Sender<String>, Vec<u8>);
     impl Write for WrapSender {
         fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
@@ -124,7 +126,7 @@ fn perform_run(model: Rc<RefCell<UIModel>>) -> Receiver<String> {
     for idx in 0..25 {
         if let Some(uiday) = &model.borrow().days[idx] {
             if uiday.active {
-                let mut wrapper = WrapSender(send.clone(), Vec::new());
+                let mut wrapper = WrapSender(sender.clone(), Vec::new());
                 let handler = uiday.handler;
                 let input = uiday.input.clone();
                 thread::spawn(move ||{
@@ -133,17 +135,16 @@ fn perform_run(model: Rc<RefCell<UIModel>>) -> Receiver<String> {
             }
         }
     }
-    recv
 }
 
-fn build_big_run_button(model: Rc<RefCell<UIModel>>) -> Button {
+fn build_big_run_button(model: Rc<RefCell<UIModel>>, sender: Sender<String>) -> Button {
     let button = Button::builder()
         .label("Run selected")
         .build();
 
     button.connect_clicked(
         move |b| {
-            perform_run(model.clone());
+            perform_run(model.clone(), sender.clone());
         }
     );
 
@@ -151,14 +152,16 @@ fn build_big_run_button(model: Rc<RefCell<UIModel>>) -> Button {
 }
 
 fn build_ui(app: &Application, model: Rc<RefCell<UIModel>>) {
+    let (send, receive) = channel();
     let layout = LayoutBox::builder()
         .orientation(Orientation::Vertical)
         .spacing(3)
         .build();
 
     layout.append(&build_day_selector_grid(model.clone()));
-    layout.append(&build_big_run_button(model.clone()));
+    layout.append(&build_big_run_button(model.clone(), send));
     layout.append(&build_input_stack_pages(model));
+    layout.append(&build_output_view(receive));
 
     let window = ApplicationWindow::builder()
         .application(app)
@@ -167,6 +170,44 @@ fn build_ui(app: &Application, model: Rc<RefCell<UIModel>>) {
         .build();
 
     window.present()
+}
+
+fn build_output_view(input_channel: Receiver<String>) -> TextView {
+    let mut buffer = Box::leak(Box::new(TextBuffer::new(None)));
+    let buffer_ptr: *mut TextBuffer = buffer;
+    let buffer_ptr = buffer_ptr as usize;
+    let widget = TextView::builder()
+        .monospace(true)
+        .height_request(300)
+        .editable(false)
+        .buffer(buffer)
+        .build();
+    timeout_add(Duration::from_millis(50),  move||{
+        let mut buffer = unsafe {
+            &*(buffer_ptr as *mut TextBuffer)
+        };
+        let mut result = input_channel.try_recv();
+        let mut count = 0;
+        while let Ok(text) = &result {
+            let mut end = buffer.end_iter();
+            buffer.insert(&mut end, text);
+            count += 1;
+            if count >= 100 {
+                // force loop to terminate so UI can unblock
+                break;
+            } else {
+                result = input_channel.try_recv();
+            }
+        }
+
+        if result == Err(TryRecvError::Disconnected) {
+            ControlFlow::Break
+        } else {
+            ControlFlow::Continue
+        }
+    });
+
+    widget
 }
 
 impl GtkUI {
@@ -186,8 +227,9 @@ struct UIModel {
 }
 
 impl UIModel {
-    fn new(activations: &[u8], advent_of_code: AdventOfCode) -> Self {
+    fn new(mut activations: &[u8], advent_of_code: AdventOfCode) -> Self {
         let mut days = [const { None }; 25];
+
         let iter = advent_of_code.days.into_iter()
             .zip(advent_of_code.inputs.into_iter())
             .enumerate();
@@ -207,7 +249,7 @@ impl UIModel {
 }
 
 impl UI for GtkUI {
-    fn run(&self, preselected_days: Vec<u8>, aoc: AdventOfCode) -> ExitCode {
+    fn run(&self, preselected_days: &[u8], aoc: AdventOfCode) -> ExitCode {
         let app = Application::builder()
             .application_id("codecentric.aoc.AoC2024")
             .build();
