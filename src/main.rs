@@ -16,6 +16,8 @@ struct Cli {
     /// Frontend to load
     #[arg(long, default_value = "gtk", value_enum)]
     ui_mode: UIMode,
+    #[arg(long)]
+    verbose: bool,
     /// path to read input from
     #[arg(long, value_name = "DIRECTORY", default_value = "./inputfiles")]
     input_path: PathBuf,
@@ -30,10 +32,10 @@ struct AdventOfCode {
 }
 
 impl AdventOfCode {
-    fn new(mut input_path: PathBuf, mode: UIMode) -> Self {
+    fn new(mut input_path: PathBuf, verbose: bool) -> Self {
         let mut days = [const { None }; 25];
         let mut inputs = [const { String::new() }; 25];
-        let handler_list = handlers(mode == UIMode::Optimized);
+        let handler_list = handlers(!verbose);
         for i in 0usize..25 {
             let day = handler_list[i]();
 
@@ -56,8 +58,8 @@ impl AdventOfCode {
 static ALL_ACTIVE: [u8; 25] = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25];
 
 fn main() -> ExitCode {
-    let Cli { input_path, run_days, ui_mode } = Cli::parse();
-    let aoc = AdventOfCode::new(input_path, ui_mode);
+    let Cli { verbose, input_path, run_days, ui_mode } = Cli::parse();
+    let aoc = AdventOfCode::new(input_path, verbose);
     let ui = select_ui(ui_mode);
     let preselected = if !run_days.is_empty() {
         run_days.as_slice()
