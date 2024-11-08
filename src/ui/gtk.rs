@@ -3,7 +3,7 @@ use std::io::{ErrorKind, Write};
 use std::mem::swap;
 use std::process::ExitCode;
 use std::rc::Rc;
-use gtk4::{Application, ApplicationWindow, Grid, Box as LayoutBox, Orientation, CheckButton, Button, Label, Widget, StackSidebar, Stack, Separator, TextView, TextBuffer, ScrolledWindow};
+use gtk4::{Application, ApplicationWindow, Grid, Box as LayoutBox, Orientation, CheckButton, Button, Label, Widget, StackSidebar, Stack, Separator, TextView, TextBuffer, ScrolledWindow, Align};
 use gtk4::glib;
 use gtk4::glib::*;
 use gtk4::prelude::*;
@@ -38,6 +38,7 @@ fn build_day_selector_widget(idx: usize, model: Rc<RefCell<UIModel>>) -> Widget 
         _ =>
             Label::builder().use_markup(true)
                 .label(format!("<i>Day {}</i>", idx + 1))
+                .halign(Align::Start)
                 .build()
                 .upcast()
     }
