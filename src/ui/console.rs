@@ -6,8 +6,8 @@ use crate::day::handlers;
 use crate::Inputs;
 use crate::ui::UI;
 
-pub struct SlowConsoleUI();
-pub struct BenchmarkingConsoleUI();
+pub struct SlowConsoleUI;
+pub struct BenchmarkingConsoleUI;
 
 impl UI for SlowConsoleUI {
     fn run(&self, preselected_days: &[u8], aoc: Inputs, verbose: bool) -> ExitCode {

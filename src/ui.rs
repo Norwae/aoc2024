@@ -71,8 +71,8 @@ pub trait UI {
 
 pub fn select_ui(mode: UIMode) -> Box<dyn UI> {
     match mode  {
-        UIMode::GTK => Box::new(GtkUI::new()),
-        UIMode::Console => Box::new(SlowConsoleUI()),
-        UIMode::Optimized => Box::new(BenchmarkingConsoleUI())
+        UIMode::GTK => Box::new(GtkUI),
+        UIMode::Console => Box::new(SlowConsoleUI),
+        UIMode::Optimized => Box::new(BenchmarkingConsoleUI)
     }
 }

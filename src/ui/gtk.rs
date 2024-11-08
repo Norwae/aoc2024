@@ -45,7 +45,7 @@ fn build_day_selector_widget(idx: usize, model: Rc<RefCell<UIModel>>) -> Widget 
 }
 
 fn build_input_editor(n: usize, day: &UIDay, model: Rc<RefCell<UIModel>>) -> Widget {
-    let contents = model.borrow().days[n].as_ref().expect("Day has contents").input.to_string();
+    let contents = day.input.to_string();
     let buffer = TextBuffer::builder()
         .enable_undo(true)
         .text(contents)
@@ -234,13 +234,6 @@ fn build_output_view(input_channel: Receiver<String>) -> Widget {
 
     widget.upcast()
 }
-
-impl GtkUI {
-    pub fn new() -> GtkUI {
-        Self {}
-    }
-}
-
 struct UIDay {
     index: usize,
     active: bool,
