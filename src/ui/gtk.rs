@@ -179,7 +179,7 @@ fn build_ui(app: &Application, model: Rc<RefCell<UIModel>>) {
     layout.attach(&build_verbose_control(model.clone()), 0, 1, 1, 1);
     layout.attach(&build_big_run_button(model.clone(), send), 1, 1, 1, 1);
     layout.attach(&build_input_stack_pages(model), 0, 2, 2, 1);
-    layout.attach(&build_output_view(receive), 0, 2, 3, 1);
+    layout.attach(&build_output_view(receive), 0, 3, 2, 1);
 
     let window = ApplicationWindow::builder()
         .application(app)
