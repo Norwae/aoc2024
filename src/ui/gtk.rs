@@ -155,16 +155,31 @@ fn build_big_run_button(model: Rc<RefCell<UIModel>>, sender: Sender<String>) -> 
     button
 }
 
+fn build_verbose_control(model: Rc<RefCell<UIModel>>) -> Widget {
+    let button = CheckButton::builder()
+        .active(model.borrow().verbose)
+        .label("Verbose")
+        .build();
+
+    button.connect_toggled(clone!(
+        #[weak] model,
+        move |b|{
+            model.borrow_mut().verbose = b.is_active();
+        }
+    ));
+    button.upcast()
+}
+
 fn build_ui(app: &Application, model: Rc<RefCell<UIModel>>) {
     let (send, receive) = channel::<String>();
-    let layout = LayoutBox::builder()
-        .orientation(Orientation::Vertical)
-        .spacing(3)
+    let layout = Grid::builder()
+        .column_spacing(4)
         .build();
-    layout.append(&build_day_selector_grid(model.clone()));
-    layout.append(&build_big_run_button(model.clone(), send));
-    layout.append(&build_input_stack_pages(model));
-    layout.append(&build_output_view(receive));
+    layout.attach(&build_day_selector_grid(model.clone()), 0, 0, 2, 1);
+    layout.attach(&build_verbose_control(model.clone()), 0, 1, 1, 1);
+    layout.attach(&build_big_run_button(model.clone(), send), 1, 1, 1, 1);
+    layout.attach(&build_input_stack_pages(model), 0, 2, 2, 1);
+    layout.attach(&build_output_view(receive), 0, 2, 3, 1);
 
     let window = ApplicationWindow::builder()
         .application(app)
@@ -186,8 +201,8 @@ fn build_output_view(input_channel: Receiver<String>) -> Widget {
         .buffer(buffer)
         .build();
     let widget= ScrolledWindow::builder()
-        .width_request(800)
-        .height_request(500)
+        .width_request(500)
+        .height_request(200)
         .child(&widget)
         .build();
 
