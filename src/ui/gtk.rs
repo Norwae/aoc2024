@@ -3,7 +3,7 @@ use std::io::{ErrorKind, Write};
 use std::mem::swap;
 use std::process::ExitCode;
 use std::rc::Rc;
-use gtk4::{Application, ApplicationWindow, Grid, Box as LayoutBox, Orientation, CheckButton, Button, Label, Widget, StackSidebar, Stack, Separator, TextView, TextBuffer};
+use gtk4::{Application, ApplicationWindow, Grid, Box as LayoutBox, Orientation, CheckButton, Button, Label, Widget, StackSidebar, Stack, Separator, TextView, TextBuffer, ScrolledWindow};
 use gtk4::glib;
 use gtk4::glib::*;
 use gtk4::prelude::*;
@@ -43,16 +43,21 @@ fn build_day_selector_widget(idx: usize, model: Rc<RefCell<UIModel>>) -> Widget 
     }
 }
 
-fn build_input_editor(n: usize, day: &UIDay, model: Rc<RefCell<UIModel>>) -> TextView {
+fn build_input_editor(n: usize, day: &UIDay, model: Rc<RefCell<UIModel>>) -> Widget {
+    let contents = model.borrow().days[n].as_ref().expect("Day has contents").input.to_string();
     let buffer = TextBuffer::builder()
-        .text(&day.input)
         .enable_undo(true)
+        .text(contents)
         .build();
 
     let text = TextView::builder()
-        .width_request(500)
         .buffer(&buffer)
         .monospace(true)
+        .build();
+    let scroller = ScrolledWindow::builder()
+        .height_request(500)
+        .width_request(500)
+        .child(&text)
         .build();
 
 
@@ -64,7 +69,7 @@ fn build_input_editor(n: usize, day: &UIDay, model: Rc<RefCell<UIModel>>) -> Tex
         })
     );
 
-    text
+    scroller.upcast()
 }
 
 fn build_input_stack_pages(model: Rc<RefCell<UIModel>>) -> LayoutBox {
@@ -151,12 +156,11 @@ fn build_big_run_button(model: Rc<RefCell<UIModel>>, sender: Sender<String>) -> 
 }
 
 fn build_ui(app: &Application, model: Rc<RefCell<UIModel>>) {
-    let (send, receive) = channel();
+    let (send, receive) = channel::<String>();
     let layout = LayoutBox::builder()
         .orientation(Orientation::Vertical)
         .spacing(3)
         .build();
-
     layout.append(&build_day_selector_grid(model.clone()));
     layout.append(&build_big_run_button(model.clone(), send));
     layout.append(&build_input_stack_pages(model));
@@ -171,7 +175,7 @@ fn build_ui(app: &Application, model: Rc<RefCell<UIModel>>) {
     window.present()
 }
 
-fn build_output_view(input_channel: Receiver<String>) -> TextView {
+fn build_output_view(input_channel: Receiver<String>) -> Widget {
     let buffer = Box::leak(Box::new(TextBuffer::new(None)));
     let buffer_ptr: *mut TextBuffer = buffer;
     let buffer_ptr = buffer_ptr as usize;
@@ -181,6 +185,12 @@ fn build_output_view(input_channel: Receiver<String>) -> TextView {
         .editable(false)
         .buffer(buffer)
         .build();
+    let widget= ScrolledWindow::builder()
+        .width_request(800)
+        .height_request(500)
+        .child(&widget)
+        .build();
+
     timeout_add(Duration::from_millis(100),  move||{
         let buffer = unsafe {
             &*(buffer_ptr as *mut TextBuffer)
@@ -206,7 +216,7 @@ fn build_output_view(input_channel: Receiver<String>) -> TextView {
         }
     });
 
-    widget
+    widget.upcast()
 }
 
 impl GtkUI {
