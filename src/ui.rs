@@ -18,49 +18,49 @@ pub enum UIMode {
     Optimized
 }
 
-pub trait UIOutput {
-    fn info(writer: &mut dyn Write, fmt: Arguments<'_>);
-    fn critical(writer: &mut dyn Write, fmt: Arguments<'_>);
-    fn result(writer: &mut dyn Write, fmt: Arguments<'_>);
+pub trait UIOutput<T: Write> {
+    fn info(writer: &mut T, fmt: Arguments<'_>);
+    fn critical(writer: &mut T, fmt: Arguments<'_>);
+    fn result(writer: &mut T, fmt: Arguments<'_>);
 }
 
 pub struct FullUI();
 pub struct OptimizedUI();
 
-fn write_wrapped(writer: &mut dyn Write, tag: &str, args: Arguments<'_>) -> Result<(), std::io::Error> {
+fn write_wrapped<T: Write>(writer: &mut T, tag: &str, args: Arguments<'_>) -> Result<(), std::io::Error> {
     writer.write(tag.as_bytes())?;
     writer.write_fmt(args)?;
     writer.flush()
 }
 
-fn write_tagged(writer: &mut dyn Write, tag: &str, args: Arguments<'_>) {
+fn write_tagged<T: Write>(writer: &mut T, tag: &str, args: Arguments<'_>) {
     if let Err(err) = write_wrapped(writer, tag, args) {
         eprintln!("Output error: {err}")
     }
 }
 
-impl UIOutput for FullUI {
-    fn info(writer: &mut dyn Write, fmt: Arguments<'_>) {
+impl <T: Write> UIOutput<T> for FullUI {
+    fn info(writer: &mut T, fmt: Arguments<'_>) {
         write_tagged(writer, "INFO: ", fmt)
     }
 
-    fn critical(writer: &mut dyn Write, fmt: Arguments<'_>) {
+    fn critical(writer: &mut T, fmt: Arguments<'_>) {
         write_tagged(writer, "CRITICAL: ", fmt)
     }
 
-    fn result(writer: &mut dyn Write, fmt: Arguments<'_>) {
+    fn result(writer: &mut T, fmt: Arguments<'_>) {
         write_tagged(writer, "RESULT:", fmt)
     }
 }
 
-impl UIOutput for OptimizedUI {
-    fn info(_writer: &mut dyn Write, _fmt: Arguments<'_>) {
+impl <T: Write> UIOutput<T> for OptimizedUI {
+    fn info(_writer: &mut T, _fmt: Arguments<'_>) {
     }
 
-    fn critical(_writer: &mut dyn Write, _fmt: Arguments<'_>) {
+    fn critical(_writer: &mut T, _fmt: Arguments<'_>) {
     }
 
-    fn result(writer: &mut dyn Write, fmt: Arguments<'_>) {
+    fn result(writer: &mut T, fmt: Arguments<'_>) {
         write_tagged(writer, "", fmt)
     }
 }

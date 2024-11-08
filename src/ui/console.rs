@@ -1,4 +1,4 @@
-use std::io::{stdout, Write};
+use std::io::{stdout, Stdout, Write};
 use std::process::ExitCode;
 use std::sync::mpsc::{channel, Sender};
 use std::time::{Duration, Instant};
@@ -11,11 +11,11 @@ pub struct BenchmarkingConsoleUI();
 
 impl UI for SlowConsoleUI {
     fn run(&self, preselected_days: &[u8], aoc: Inputs, verbose: bool) -> ExitCode {
-        let handlers = handlers(!verbose);
+        let handlers = handlers::<Stdout>(!verbose);
         for day in preselected_days {
             let index = *day as usize - 1;
             if let Some(day) = handlers[index]() {
-                day(&aoc.inputs[index],  &mut stdout());
+                (day.handler)(&aoc.inputs[index],  &mut stdout());
             }
         }
 
@@ -23,7 +23,7 @@ impl UI for SlowConsoleUI {
     }
 }
 
-fn execute_day_handler(function: fn(&str, &mut dyn Write), input: String, out: Sender<OptimizedOutput>) {
+fn execute_day_handler(function: fn(&str, &mut Vec<u8>), input: String, out: Sender<OptimizedOutput>) {
     let mut output_buffer = Vec::new();
     let start = Instant::now();
     function(&input, &mut output_buffer);
@@ -40,7 +40,7 @@ struct OptimizedOutput {
 
 impl UI for BenchmarkingConsoleUI {
     fn run(&self, preselected_days: &[u8], aoc: Inputs, verbose: bool) -> ExitCode {
-        let handler_functions = handlers(!verbose).map(|f|f());
+        let handler_functions = handlers::<Vec<u8>>(!verbose).map(|f|f());
         let mut expected_answers = 0;
         let (sender, receive) = channel();
         let pool = threadpool::Builder::new()
@@ -49,12 +49,12 @@ impl UI for BenchmarkingConsoleUI {
         let clock_start = Instant::now();
         for day in  preselected_days {
             let index = *day as usize -1;
-            if let Some(callback) = handler_functions[index] {
+            if let Some(callback) = handler_functions[index].clone() {
                 let sender= sender.clone();
                 let input = aoc.inputs[index].clone();
                 expected_answers += 1;
                 pool.execute(move ||{
-                    execute_day_handler(callback, input, sender)
+                    execute_day_handler(callback.handler, input, sender)
                 })
             }
         }

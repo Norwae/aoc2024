@@ -105,30 +105,31 @@ fn build_day_selector_grid(model: Rc<RefCell<UIModel>>) -> Grid {
 
     grid
 }
+struct WrapSender(Sender<String>, Vec<u8>);
+impl Write for WrapSender {
+    fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
+        self.1.write(buf)
+    }
+
+    fn flush(&mut self) -> std::io::Result<()> {
+        let mut captured = Vec::new();
+        swap(&mut captured, &mut self.1);
+        let string = String::from_utf8(captured).expect("UTF8");
+        self.0.send(string).map_err(|e| std::io::Error::new(ErrorKind::BrokenPipe, e))
+    }
+}
 
 fn perform_run(model: Rc<RefCell<UIModel>>, sender: Sender<String>)  {
-    struct WrapSender(Sender<String>, Vec<u8>);
-    impl Write for WrapSender {
-        fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
-            self.1.write(buf)
-        }
 
-        fn flush(&mut self) -> std::io::Result<()> {
-            let mut captured = Vec::new();
-            swap(&mut captured, &mut self.1);
-            let string = String::from_utf8(captured).expect("UTF8");
-            self.0.send(string).map_err(|e| std::io::Error::new(ErrorKind::BrokenPipe, e))
-        }
-    }
     for idx in 0..25 {
         let model = model.borrow();
         if let Some(uiday) = &model.days[idx] {
             if uiday.active {
                 let mut wrapper = WrapSender(sender.clone(), Vec::new());
-                let handler = handlers(!model.verbose)[uiday.index]().expect("Handler available");
+                let day = handlers::<WrapSender>(!model.verbose)[uiday.index]().expect("Handler available");
                 let input = uiday.input.clone();
                 thread::spawn(move ||{
-                    handler(&input, &mut wrapper)
+                    (day.handler)(&input, &mut wrapper)
                 });
             }
         }
@@ -229,7 +230,7 @@ impl UIModel {
     fn new(activations: &[u8], advent_of_code: Inputs, verbose: bool) -> Self {
         let mut days = [const { None }; 25];
 
-        let iter = handlers(!verbose).into_iter()
+        let iter = handlers::<WrapSender>(!verbose).into_iter()
             .zip(advent_of_code.inputs.into_iter())
             .enumerate();
         for (n, (solver, input)) in iter {
