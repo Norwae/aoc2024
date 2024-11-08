@@ -55,6 +55,7 @@ impl UI for BenchmarkingConsoleUI {
                 })
             }
         }
+        drop(sender);
 
         let mut total_duration = Duration::ZERO;
         let mut overall_output = String::new();
