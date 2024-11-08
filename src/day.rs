@@ -1,6 +1,5 @@
-use std::fmt::Display;
 use std::io::Write;
-use crate::ui::{FullUI, OptimizedUI, UI, UIOutput};
+use crate::ui::{FullUI, OptimizedUI};
 
 mod day01;
 mod day02;
@@ -46,7 +45,9 @@ pub struct Day<T : Write> {
          simple_day! { |input, out| {
              match parse(input) {
                  Ok(parsed) => {
+                     Out::info(out, format_args!("Parsed input successfully\n"));
                      let part1 = $part1(&parsed);
+                     Out::info(out, format_args!("Completed part 1 calculation: {}\n", &part1));
                      let part2 = $part2(&parsed);
                      format!("Part1: {}, Part2: {}", part1, part2)
                  },

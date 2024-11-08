@@ -7,7 +7,6 @@ use std::fs::read;
 use clap::Parser;
 use std::path::PathBuf;
 use std::process::ExitCode;
-use crate::day::handlers;
 use crate::ui::{select_ui, UIMode};
 
 
