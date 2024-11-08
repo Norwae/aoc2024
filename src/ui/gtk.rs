@@ -1,20 +1,16 @@
 use std::cell::RefCell;
-use std::fmt::format;
-use std::io::{ErrorKind, stdout, Write};
+use std::io::{ErrorKind, Write};
 use std::mem::swap;
-use std::ops::Deref;
 use std::process::ExitCode;
 use std::rc::Rc;
-use gtk4::{Application, ApplicationWindow, Grid, Box as LayoutBox, Orientation, CheckButton, Button, Label, Widget, StackSidebar, StackSwitcher, Stack, Separator, Text, TextView, TextBuffer, TextIter};
+use gtk4::{Application, ApplicationWindow, Grid, Box as LayoutBox, Orientation, CheckButton, Button, Label, Widget, StackSidebar, Stack, Separator, TextView, TextBuffer};
 use gtk4::glib;
 use gtk4::glib::*;
 use gtk4::prelude::*;
 
-use std::sync::{Arc, mpsc};
 use std::sync::mpsc::{channel, Receiver, Sender, TryRecvError};
 use std::thread;
 use std::time::Duration;
-use gtk4::ffi::GtkTextBuffer;
 
 use crate::AdventOfCode;
 use crate::ui::UI;
@@ -143,7 +139,7 @@ fn build_big_run_button(model: Rc<RefCell<UIModel>>, sender: Sender<String>) -> 
         .build();
 
     button.connect_clicked(
-        move |b| {
+        move |_b| {
             perform_run(model.clone(), sender.clone());
         }
     );
@@ -173,7 +169,7 @@ fn build_ui(app: &Application, model: Rc<RefCell<UIModel>>) {
 }
 
 fn build_output_view(input_channel: Receiver<String>) -> TextView {
-    let mut buffer = Box::leak(Box::new(TextBuffer::new(None)));
+    let buffer = Box::leak(Box::new(TextBuffer::new(None)));
     let buffer_ptr: *mut TextBuffer = buffer;
     let buffer_ptr = buffer_ptr as usize;
     let widget = TextView::builder()
@@ -183,7 +179,7 @@ fn build_output_view(input_channel: Receiver<String>) -> TextView {
         .buffer(buffer)
         .build();
     timeout_add(Duration::from_millis(100),  move||{
-        let mut buffer = unsafe {
+        let buffer = unsafe {
             &*(buffer_ptr as *mut TextBuffer)
         };
         let mut result = input_channel.try_recv();
@@ -227,7 +223,7 @@ struct UIModel {
 }
 
 impl UIModel {
-    fn new(mut activations: &[u8], advent_of_code: AdventOfCode) -> Self {
+    fn new(activations: &[u8], advent_of_code: AdventOfCode) -> Self {
         let mut days = [const { None }; 25];
 
         let iter = advent_of_code.days.into_iter()

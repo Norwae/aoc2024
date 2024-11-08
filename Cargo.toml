@@ -8,3 +8,4 @@ edition = "2021"
 [dependencies]
 clap = { version = "4.5.20", features = ["derive"] }
 gtk4 = "0.9.3"
+threadpool = "1.8.1"

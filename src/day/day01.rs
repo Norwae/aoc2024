@@ -1,5 +1,5 @@
 use crate::*;
 
-unparsed_simple_day! { | str | {
-    format!("Get bytes for {str}!")
-}}
+simple_day! { | str | {
+    format!("Hey hey hey {str}")
+} }

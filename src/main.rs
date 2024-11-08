@@ -6,8 +6,8 @@ use std::fs::read;
 use clap::Parser;
 use std::path::PathBuf;
 use std::process::ExitCode;
+use crate::day::handlers;
 use crate::ui::{select_ui, UIMode};
-use crate::day::REGISTRY;
 
 
 #[derive(Parser, Debug)]
@@ -30,11 +30,12 @@ struct AdventOfCode {
 }
 
 impl AdventOfCode {
-    fn new(mut input_path: PathBuf) -> Self {
+    fn new(mut input_path: PathBuf, mode: UIMode) -> Self {
         let mut days = [const { None }; 25];
         let mut inputs = [const { String::new() }; 25];
+        let handler_list = handlers(mode == UIMode::Optimized);
         for i in 0usize..25 {
-            let day = REGISTRY[i]();
+            let day = handler_list[i]();
 
             if day.is_some() {
                 input_path.push(format!("{:02}", i + 1));
@@ -56,7 +57,7 @@ static ALL_ACTIVE: [u8; 25] = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,2
 
 fn main() -> ExitCode {
     let Cli { input_path, run_days, ui_mode } = Cli::parse();
-    let aoc = AdventOfCode::new(input_path);
+    let aoc = AdventOfCode::new(input_path, ui_mode);
     let ui = select_ui(ui_mode);
     let preselected = if !run_days.is_empty() {
         run_days.as_slice()
