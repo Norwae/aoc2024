@@ -1,4 +1,4 @@
-use std::io::{stdout, Stdout, Write};
+use std::io::{stdout, Stdout};
 use std::process::ExitCode;
 use std::sync::mpsc::{channel, Sender};
 use std::time::{Duration, Instant};

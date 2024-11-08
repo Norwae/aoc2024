@@ -1,5 +1,6 @@
+use std::fmt::Display;
 use std::io::Write;
-use crate::ui::{FullUI, OptimizedUI};
+use crate::ui::{FullUI, OptimizedUI, UI, UIOutput};
 
 mod day01;
 mod day02;
@@ -39,6 +40,24 @@ pub struct Day<T : Write> {
         }
     };
 }
+
+#[macro_export] macro_rules! parsed_day {
+     ($parse:ident, $part1:ident, $part2:ident) => {
+         simple_day! { |input, out| {
+             match parse(input) {
+                 Ok(parsed) => {
+                     let part1 = $part1(&parsed);
+                     let part2 = $part2(&parsed);
+                     format!("Part1: {}, Part2: {}", part1, part2)
+                 },
+                 Err(failed) => {
+                     Out::critical(out, format_args!("Parsing failed for {}: {}", input, failed));
+                     "".to_string()
+                 }
+             }
+         }}
+     };
+ }
 
 #[macro_export] macro_rules! simple_day {
     (| $n:ident | $body:expr) => {
