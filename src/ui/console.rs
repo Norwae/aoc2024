@@ -2,17 +2,19 @@ use std::io::{stdout, Write};
 use std::process::ExitCode;
 use std::sync::mpsc::{channel, Sender};
 use std::time::{Duration, Instant};
-use crate::AdventOfCode;
+use crate::day::handlers;
+use crate::Inputs;
 use crate::ui::UI;
 
 pub struct SlowConsoleUI();
 pub struct BenchmarkingConsoleUI();
 
 impl UI for SlowConsoleUI {
-    fn run(&self, preselected_days: &[u8], aoc: AdventOfCode) -> ExitCode {
+    fn run(&self, preselected_days: &[u8], aoc: Inputs, verbose: bool) -> ExitCode {
+        let handlers = handlers(!verbose);
         for day in preselected_days {
             let index = *day as usize - 1;
-            if let Some(day) = aoc.days[index] {
+            if let Some(day) = handlers[index]() {
                 day(&aoc.inputs[index],  &mut stdout());
             }
         }
@@ -37,7 +39,8 @@ struct OptimizedOutput {
 }
 
 impl UI for BenchmarkingConsoleUI {
-    fn run(&self, preselected_days: &[u8], aoc: AdventOfCode) -> ExitCode {
+    fn run(&self, preselected_days: &[u8], aoc: Inputs, verbose: bool) -> ExitCode {
+        let handler_functions = handlers(!verbose).map(|f|f());
         let mut expected_answers = 0;
         let (sender, receive) = channel();
         let pool = threadpool::Builder::new()
@@ -46,7 +49,7 @@ impl UI for BenchmarkingConsoleUI {
         let clock_start = Instant::now();
         for day in  preselected_days {
             let index = *day as usize -1;
-            if let Some(callback) = aoc.days[index] {
+            if let Some(callback) = handler_functions[index] {
                 let sender= sender.clone();
                 let input = aoc.inputs[index].clone();
                 expected_answers += 1;

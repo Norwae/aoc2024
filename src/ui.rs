@@ -8,7 +8,7 @@ use std::process::ExitCode;
 use clap::ValueEnum;
 
 use crate::ui::gtk::GtkUI;
-use super::AdventOfCode;
+use super::Inputs;
 
 
 #[derive(Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq, ValueEnum)]
@@ -66,7 +66,7 @@ impl UIOutput for OptimizedUI {
 }
 
 pub trait UI {
-    fn run(&self, preselected_days: &[u8], aoc: AdventOfCode) -> ExitCode;
+    fn run(&self, preselected_days: &[u8], inputs: Inputs, verbose: bool) -> ExitCode;
 }
 
 pub fn select_ui(mode: UIMode) -> Box<dyn UI> {

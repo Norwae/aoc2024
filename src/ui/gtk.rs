@@ -11,8 +11,9 @@ use gtk4::prelude::*;
 use std::sync::mpsc::{channel, Receiver, Sender, TryRecvError};
 use std::thread;
 use std::time::Duration;
+use crate::day::handlers;
 
-use crate::AdventOfCode;
+use crate::Inputs;
 use crate::ui::UI;
 
 pub struct GtkUI;
@@ -120,10 +121,11 @@ fn perform_run(model: Rc<RefCell<UIModel>>, sender: Sender<String>)  {
         }
     }
     for idx in 0..25 {
-        if let Some(uiday) = &model.borrow().days[idx] {
+        let model = model.borrow();
+        if let Some(uiday) = &model.days[idx] {
             if uiday.active {
                 let mut wrapper = WrapSender(sender.clone(), Vec::new());
-                let handler = uiday.handler;
+                let handler = handlers(!model.verbose)[uiday.index]().expect("Handler available");
                 let input = uiday.input.clone();
                 thread::spawn(move ||{
                     handler(&input, &mut wrapper)
@@ -213,43 +215,44 @@ impl GtkUI {
 }
 
 struct UIDay {
+    index: usize,
     active: bool,
     input: String,
-    handler: fn (&str, &mut dyn Write),
 }
 
 struct UIModel {
+    verbose: bool,
     days: [Option<UIDay>; 25],
 }
 
 impl UIModel {
-    fn new(activations: &[u8], advent_of_code: AdventOfCode) -> Self {
+    fn new(activations: &[u8], advent_of_code: Inputs, verbose: bool) -> Self {
         let mut days = [const { None }; 25];
 
-        let iter = advent_of_code.days.into_iter()
+        let iter = handlers(!verbose).into_iter()
             .zip(advent_of_code.inputs.into_iter())
             .enumerate();
-        for (n, (solve, input)) in iter {
-            if let Some(handler) = solve {
+        for (n, (solver, input)) in iter {
+            if let Some(_) = solver() {
                 let active = activations.iter().find(|it| **it == n as u8 + 1).is_some();
                 days[n] = Some(UIDay {
-                    handler,
+                    index: n,
                     input,
                     active,
                 })
             }
         }
 
-        UIModel { days }
+        UIModel { verbose, days }
     }
 }
 
 impl UI for GtkUI {
-    fn run(&self, preselected_days: &[u8], aoc: AdventOfCode) -> ExitCode {
+    fn run(&self, preselected_days: &[u8], aoc: Inputs, verbose: bool) -> ExitCode {
         let app = Application::builder()
             .application_id("codecentric.aoc.AoC2024")
             .build();
-        let model = Rc::new(RefCell::new(UIModel::new(&preselected_days, aoc)));
+        let model = Rc::new(RefCell::new(UIModel::new(&preselected_days, aoc, verbose)));
         app.connect_activate(clone!(
             #[weak] model,
             move |app| {
