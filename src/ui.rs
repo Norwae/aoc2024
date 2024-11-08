@@ -1,5 +1,7 @@
 mod gtk;
+mod console;
 
+use crate::ui::console::ConsoleUI;
 use std::process::ExitCode;
 use clap::ValueEnum;
 
@@ -11,7 +13,7 @@ use super::AdventOfCode;
 pub enum UIMode {
     GTK,
     Console,
-    OptimizedHeadless
+    Optimized
 }
 pub trait UI {
     fn run(&self, preselected_days: &[u8], aoc: AdventOfCode) -> ExitCode;
@@ -20,6 +22,7 @@ pub trait UI {
 pub fn select_ui(mode: UIMode) -> Box<dyn UI> {
     match mode  {
         UIMode::GTK => Box::new(GtkUI::new()),
+        UIMode::Console => Box::new(ConsoleUI()),
         _ => panic!("UIMode {mode:?} not yet implemented")
     }
 }

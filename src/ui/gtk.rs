@@ -182,7 +182,7 @@ fn build_output_view(input_channel: Receiver<String>) -> TextView {
         .editable(false)
         .buffer(buffer)
         .build();
-    timeout_add(Duration::from_millis(50),  move||{
+    timeout_add(Duration::from_millis(100),  move||{
         let mut buffer = unsafe {
             &*(buffer_ptr as *mut TextBuffer)
         };
