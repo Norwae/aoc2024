@@ -112,7 +112,9 @@ fn build_day_selector_grid(model: Rc<RefCell<UIModel>>) -> Grid {
 
     grid
 }
+
 struct WrapSender(Sender<String>, Vec<u8>);
+
 impl Write for WrapSender {
     fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
         self.1.write(buf)
@@ -126,33 +128,54 @@ impl Write for WrapSender {
     }
 }
 
-fn perform_run(model: Rc<RefCell<UIModel>>, sender: Sender<String>)  {
-
+fn perform_run(model: Rc<RefCell<UIModel>>, text: TextBuffer) {
+    let (sender, receiver) = channel();
+    let model = model.borrow();
+    let handlers = handlers(*&model.verbose);
     for idx in 0..25 {
-        let model = model.borrow();
-        if let Some(uiday) = &model.days[idx] {
-            if uiday.active {
+        match &model.days[idx] {
+            Some(UIDay { active, input, index }) if *active => {
                 let mut wrapper = WrapSender(sender.clone(), Vec::new());
-                let day = handlers::<WrapSender>(!model.verbose)[uiday.index]().expect("Handler available");
-                let input = uiday.input.clone();
-                run_on_worker(move ||{
+                let day = handlers[*index]().expect("Handler available");
+                let input = input.clone();
+                run_on_worker(move || {
                     (day.handler)(&input, &mut wrapper)
                 });
             }
+            _ => ()
         }
     }
+
+    install_ui_update_callback(receiver, text)
 }
 
-fn build_big_run_button(model: Rc<RefCell<UIModel>>, sender: Sender<String>) -> Button {
+fn install_ui_update_callback(recv: Receiver<String>, text: TextBuffer) {
+    timeout_add_local(Duration::from_millis(100),
+      move || {
+          match recv.try_recv() {
+              Ok(msg) => {
+                  let mut iter = text.end_iter();
+                  text.insert(&mut iter, &msg);
+                  ControlFlow::Continue
+              }
+              Err(TryRecvError::Empty) => ControlFlow::Continue,
+              _ => ControlFlow::Break
+          }
+      });
+}
+
+fn build_big_run_button(model: Rc<RefCell<UIModel>>, text: TextBuffer) -> Button {
     let button = Button::builder()
         .label("Run selected")
         .build();
 
-    button.connect_clicked(
+    button.connect_clicked(clone!(
+        #[weak] text,
+        #[weak] model,
         move |_b| {
-            perform_run(model.clone(), sender.clone());
+            perform_run(model, text)
         }
-    );
+    ));
 
     button
 }
@@ -173,15 +196,16 @@ fn build_verbose_control(model: Rc<RefCell<UIModel>>) -> Widget {
 }
 
 fn build_ui(app: &Application, model: Rc<RefCell<UIModel>>) {
-    let (send, receive) = channel::<String>();
     let layout = Grid::builder()
         .column_spacing(4)
         .build();
     layout.attach(&build_day_selector_grid(model.clone()), 0, 0, 2, 1);
     layout.attach(&build_verbose_control(model.clone()), 0, 1, 1, 1);
-    layout.attach(&build_big_run_button(model.clone(), send), 1, 1, 1, 1);
-    layout.attach(&build_input_stack_pages(model), 0, 2, 2, 1);
-    layout.attach(&build_output_view(receive), 0, 3, 2, 1);
+    layout.attach(&build_input_stack_pages(model.clone()), 0, 2, 2, 1);
+    let (text, widget) = build_output_view();
+    layout.attach(&widget, 0, 3, 2, 1);
+    let button = build_big_run_button(model.clone(), text);
+    layout.attach(&button, 1, 1, 1, 1);
 
     let window = ApplicationWindow::builder()
         .application(app)
@@ -192,49 +216,23 @@ fn build_ui(app: &Application, model: Rc<RefCell<UIModel>>) {
     window.present()
 }
 
-fn build_output_view(input_channel: Receiver<String>) -> Widget {
-    let buffer = Box::leak(Box::new(TextBuffer::new(None)));
-    let buffer_ptr: *mut TextBuffer = buffer;
-    let buffer_ptr = buffer_ptr as usize;
+fn build_output_view() -> (TextBuffer, Widget) {
+    let buffer = TextBuffer::new(None);
     let widget = TextView::builder()
         .monospace(true)
         .height_request(300)
         .editable(false)
-        .buffer(buffer)
+        .buffer(&buffer)
         .build();
-    let widget= ScrolledWindow::builder()
+    let widget = ScrolledWindow::builder()
         .width_request(500)
         .height_request(200)
         .child(&widget)
         .build();
 
-    timeout_add(Duration::from_millis(100),  move||{
-        let buffer = unsafe {
-            &*(buffer_ptr as *mut TextBuffer)
-        };
-        let mut result = input_channel.try_recv();
-        let mut count = 0;
-        while let Ok(text) = &result {
-            let mut end = buffer.end_iter();
-            buffer.insert(&mut end, text);
-            count += 1;
-            if count >= 100 {
-                // force loop to terminate so UI can unblock
-                break;
-            } else {
-                result = input_channel.try_recv();
-            }
-        }
-
-        if result == Err(TryRecvError::Disconnected) {
-            ControlFlow::Break
-        } else {
-            ControlFlow::Continue
-        }
-    });
-
-    widget.upcast()
+    (buffer, widget.upcast())
 }
+
 struct UIDay {
     index: usize,
     active: bool,

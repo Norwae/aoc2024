@@ -18,6 +18,14 @@ pub enum UIMode {
     Optimized
 }
 
+/*
+Why not defer the type arg to an instance? Because we can't do the simple type inference
+from _just_ the Write implication in the various register implementations. We do a sneaky type
+switch there and lifting this into the signature of Day would mean we need to know which output style
+is actually connected. Could be solved by an enum (which will make it a runtime if) but we want to
+avoid having a conditional branch if possible. Is this psychotic? Maybe.
+*/
+
 pub trait UIOutput<T: Write> {
     fn info(writer: &mut T, fmt: Arguments<'_>);
     fn critical(writer: &mut T, fmt: Arguments<'_>);
