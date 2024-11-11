@@ -9,9 +9,8 @@ use gtk4::glib::*;
 use gtk4::prelude::*;
 
 use std::sync::mpsc::{channel, Receiver, Sender, TryRecvError};
-use std::thread;
 use std::time::Duration;
-use crate::day::handlers;
+use crate::day::{Day, handlers};
 
 use crate::Inputs;
 use crate::ui::UI;
@@ -131,15 +130,19 @@ impl Write for WrapSender {
 fn perform_run(model: Rc<RefCell<UIModel>>, text: TextBuffer) {
     let (sender, receiver) = channel();
     let model = model.borrow();
-    let handlers = handlers(*&model.verbose);
-    for idx in 0..25 {
-        match &model.days[idx] {
-            Some(UIDay { active, input, index }) if *active => {
+    let verbose = model.verbose;
+
+    for day in model.days.iter().cloned(){
+        match day {
+            Some(UIDay { active, input, verbose_handler, terse_handler})
+                if active => {
                 let mut wrapper = WrapSender(sender.clone(), Vec::new());
-                let day = handlers[*index]().expect("Handler available");
-                let input = input.clone();
                 run_on_worker(move || {
-                    (day.handler)(&input, &mut wrapper)
+                    if verbose {
+                        verbose_handler(&input, &mut wrapper)
+                    } else {
+                        terse_handler(&input, &mut wrapper)
+                    }
                 });
             }
             _ => ()
@@ -233,10 +236,12 @@ fn build_output_view() -> (TextBuffer, Widget) {
     (buffer, widget.upcast())
 }
 
+#[derive(Clone)]
 struct UIDay {
-    index: usize,
     active: bool,
     input: String,
+    verbose_handler: fn(&str, &mut WrapSender),
+    terse_handler: fn(&str, &mut WrapSender)
 }
 
 struct UIModel {
@@ -248,17 +253,23 @@ impl UIModel {
     fn new(activations: &[u8], advent_of_code: Inputs, verbose: bool) -> Self {
         let mut days = [const { None }; 25];
 
-        let iter = handlers::<WrapSender>(!verbose).into_iter()
+        let iter = handlers::<WrapSender>(!verbose).into_iter().map(|f|f())
+            .zip(handlers::<WrapSender>(verbose).map(|f|f()))
             .zip(advent_of_code.inputs.into_iter())
             .enumerate();
-        for (n, (solver, input)) in iter {
-            if let Some(_) = solver() {
-                let active = activations.iter().find(|it| **it == n as u8 + 1).is_some();
-                days[n] = Some(UIDay {
-                    index: n,
-                    input,
-                    active,
-                })
+
+        for (n, tpl) in iter {
+            days[n] = match tpl {
+                (((Some(Day { handler: terse_handler }), Some(Day {handler: verbose_handler})), input)) => {
+                    let active = activations.iter().find(|it| **it == n as u8 + 1).is_some();
+                    Some(UIDay {
+                        input,
+                        active,
+                        terse_handler,
+                        verbose_handler
+                    })
+                },
+                _ => None
             }
         }
 
