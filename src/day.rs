@@ -27,9 +27,9 @@ mod day24;
 mod day25;
 
 #[derive(Clone)]
-pub struct Day<T : Write> {
+pub struct Day<T: Write> {
     pub terse: fn(&str, T),
-    pub verbose: fn(&str, T)
+    pub verbose: fn(&str, T),
 }
 
 #[macro_export] macro_rules! unimplemented_day {
@@ -42,7 +42,23 @@ pub struct Day<T : Write> {
 
 
 #[macro_export] macro_rules! memoized_day {
-     ($parse:ident, $part1:ident, $part2:ident) => {
+    ($parse:ident) => {
+        fn unimplemented_part_1<T>(_input: &T) -> (&'static str, ()) {
+            ("UNIMPLEMENTED", ())
+        }
+
+        fn unimplemented_part_2<T>(_input: &T, _memo: ()) -> &'static str {
+            "UNIMPLEMENTED"
+        }
+        memoized_day!($parse, unimplemented_part_1, unimplemented_part_2);
+    };
+    ($parse:ident, $part1:ident) => {
+        fn unimplemented_part<T, Memo>(_input: &T, _memo: Memo) -> &'static str {
+            "UNIMPLEMENTED"
+        }
+        memoized_day!($parse, $part1, unimplemented_part);
+    };
+    ($parse:ident, $part1:ident, $part2:ident) => {
          simple_day! { |input, out| {
              match parse(input) {
                  Ok(parsed) => {
@@ -58,12 +74,23 @@ pub struct Day<T : Write> {
                  }
              }
          }}
-     };
+    };
  }
 
-
 #[macro_export] macro_rules! parsed_day {
-     ($parse:ident, $part1:ident, $part2:ident) => {
+    ($parse:ident) => {
+        fn unimplemented_part<T>(_input: &T) -> &'static str {
+            "UNIMPLEMENTED"
+        }
+        parsed_day!($parse, unimplemented_part, unimplemented_part);
+    };
+    ($parse:ident, $part1:ident) => {
+        fn unimplemented_part<T>(_input: &T) -> &'static str {
+            "UNIMPLEMENTED"
+        }
+        parsed_day!($parse, $part1, unimplemented_part);
+    };
+    ($parse:ident, $part1:ident, $part2:ident) => {
          simple_day! { |input, out| {
              match parse(input) {
                  Ok(parsed) => {
@@ -79,7 +106,7 @@ pub struct Day<T : Write> {
                  }
              }
          }}
-     };
+    };
  }
 
 #[macro_export] macro_rules! simple_day {
@@ -107,15 +134,15 @@ pub struct Day<T : Write> {
  }
 
 pub fn handlers<T: Write>() -> [fn() -> Option<Day<T>>; 25] {
-        [
-            day01::register::<T>, day02::register::<T>, day03::register::<T>,
-            day04::register::<T>, day05::register::<T>, day06::register::<T>,
-            day07::register::<T>, day08::register::<T>, day09::register::<T>,
-            day10::register::<T>, day11::register::<T>, day12::register::<T>,
-            day13::register::<T>, day14::register::<T>, day15::register::<T>,
-            day16::register::<T>, day17::register::<T>, day18::register::<T>,
-            day19::register::<T>, day20::register::<T>, day21::register::<T>,
-            day22::register::<T>, day23::register::<T>, day24::register::<T>,
-            day25::register::<T>
-        ]
+    [
+        day01::register::<T>, day02::register::<T>, day03::register::<T>,
+        day04::register::<T>, day05::register::<T>, day06::register::<T>,
+        day07::register::<T>, day08::register::<T>, day09::register::<T>,
+        day10::register::<T>, day11::register::<T>, day12::register::<T>,
+        day13::register::<T>, day14::register::<T>, day15::register::<T>,
+        day16::register::<T>, day17::register::<T>, day18::register::<T>,
+        day19::register::<T>, day20::register::<T>, day21::register::<T>,
+        day22::register::<T>, day23::register::<T>, day24::register::<T>,
+        day25::register::<T>
+    ]
 }
