@@ -65,7 +65,7 @@ pub struct Day<T: Write> {
                      out.info(format_args!("Parsed input successfully\n"));
                      let (part1, memo) = $part1(&parsed);
                      out.info(format_args!("Completed part 1 calculation: {} (memo {:?})\n", &part1, &memo));
-                     let part2 = $part2(&parsed, memo);
+                     let part2 = $part2(parsed, memo);
                      format!("Part1: {}, Part2: {}", part1, part2)
                  },
                  Err(failed) => {
@@ -97,7 +97,7 @@ pub struct Day<T: Write> {
                      out.info(format_args!("Parsed input successfully\n"));
                      let part1 = $part1(&parsed);
                      out.info(format_args!("Completed part 1 calculation: {}\n", &part1));
-                     let part2 = $part2(&parsed);
+                     let part2 = $part2(parsed);
                      format!("Part1: {}, Part2: {}", part1, part2)
                  },
                  Err(failed) => {

@@ -16,12 +16,12 @@ const STRING_VALUE_PAIRS: [(&'static str, i64, usize); 9] = [
 ];
 
 
-fn solve_generic<F: Fn(i64) -> Option<u64>>(input: &Vec<i64>, map: F) -> u64 {
+fn solve_generic(input: impl AsRef<Vec<i64>>, map: impl Fn(i64) -> Option<u64>) -> u64 {
     let mut sum = 0;
     let mut first = u64::MAX;
     let mut last = 0;
 
-    for content in input.into_iter() {
+    for content in input.as_ref().into_iter() {
         let content = *content;
 
         if content == 0 {
@@ -49,8 +49,8 @@ fn part1(input: &Vec<i64>) -> u64 {
     })
 }
 
-fn part2(input: &Vec<i64>) -> u64 {
-    solve_generic(input, |c| {
+fn part2(input: Vec<i64>) -> u64 {
+    solve_generic(&input, |c| {
         Some(c.unsigned_abs())
     })
 }
