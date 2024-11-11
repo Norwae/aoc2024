@@ -136,12 +136,12 @@ fn perform_run(model: Rc<RefCell<UIModel>>, text: TextBuffer) {
         match day {
             Some(UIDay { active, input, verbose_handler, terse_handler })
             if active => {
-                let wrapper = WrapSender(sender.clone(), Vec::new());
+                let mut wrapper = WrapSender(sender.clone(), Vec::new());
                 run_on_worker(move || {
                     if verbose {
-                        verbose_handler(&input, wrapper)
+                        verbose_handler(&input, &mut wrapper)
                     } else {
-                        terse_handler(&input, wrapper)
+                        terse_handler(&input, &mut wrapper)
                     }
                 });
             }
@@ -240,8 +240,8 @@ fn build_output_view() -> (TextBuffer, Widget) {
 struct UIDay {
     active: bool,
     input: String,
-    verbose_handler: fn(&str, WrapSender),
-    terse_handler: fn(&str, WrapSender),
+    verbose_handler: for <'source, 'sink> fn(&'source str, &'sink mut WrapSender),
+    terse_handler:  for <'source, 'sink> fn(&'source str, &'sink mut WrapSender),
 }
 
 struct UIModel {

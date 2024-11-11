@@ -1,7 +1,5 @@
-use std::cell::RefCell;
-use std::io::{stdout, Stdout, Write};
+use std::io::{stdout, Stdout};
 use std::process::ExitCode;
-use std::rc::Rc;
 use std::sync::mpsc::{channel, Sender};
 use std::time::{Duration, Instant};
 use crate::day::handlers;
@@ -24,7 +22,7 @@ impl UI for SlowConsoleUI {
                 } else {
                     day.terse
                 };
-                handler(&aoc.inputs[index], stdout());
+                handler(&aoc.inputs[index], &mut stdout());
             }
         }
 
@@ -32,13 +30,11 @@ impl UI for SlowConsoleUI {
     }
 }
 
-fn execute_day_handler(function:  fn(&str, BenchmarkBuffer), input: String, out: Sender<OptimizedOutput>) {
-    let output_buffer = Rc::new(RefCell::new(Vec::new()));
+fn execute_day_handler(function:  fn(&str, &mut Vec<u8>), input: String, out: Sender<OptimizedOutput>) {
+    let mut output_buffer = Vec::new();
     let start = Instant::now();
-    function(&input, BenchmarkBuffer(output_buffer.clone()));
+    function(&input, &mut output_buffer);
     let timing = Instant::now() - start;
-    let output_buffer = Rc::into_inner(output_buffer).expect("Sole owner");
-    let output_buffer = output_buffer.into_inner();
     out.send(OptimizedOutput {
         timing,
         output_buffer
@@ -50,20 +46,9 @@ struct OptimizedOutput {
     timing: Duration,
 }
 
-struct BenchmarkBuffer(Rc<RefCell<Vec<u8>>>);
-impl Write for BenchmarkBuffer {
-    fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
-        self.0.borrow_mut().write(buf)
-    }
-
-    fn flush(&mut self) -> std::io::Result<()> {
-        Ok(())
-    }
-}
-
 impl UI for BenchmarkingConsoleUI {
     fn run(&self, preselected_days: &[u8], aoc: Inputs, verbose: bool) -> ExitCode {
-        let handler_functions = handlers::<BenchmarkBuffer>().map(|f| f());
+        let handler_functions = handlers::<Vec<u8>>().map(|f| f());
         let mut expected_answers = 0;
         let (sender, receive) = channel();
         let clock_start = Instant::now();

@@ -1,5 +1,6 @@
 use crate::*;
 
+
 parsed_day!(parse, part1, part2);
 
 const STRING_VALUE_PAIRS: [(&'static str, i64, usize); 9] = [
