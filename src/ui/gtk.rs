@@ -15,6 +15,7 @@ use crate::day::handlers;
 
 use crate::Inputs;
 use crate::ui::UI;
+use crate::worker::run_on_worker;
 
 pub struct GtkUI;
 
@@ -134,7 +135,7 @@ fn perform_run(model: Rc<RefCell<UIModel>>, sender: Sender<String>)  {
                 let mut wrapper = WrapSender(sender.clone(), Vec::new());
                 let day = handlers::<WrapSender>(!model.verbose)[uiday.index]().expect("Handler available");
                 let input = uiday.input.clone();
-                thread::spawn(move ||{
+                run_on_worker(move ||{
                     (day.handler)(&input, &mut wrapper)
                 });
             }

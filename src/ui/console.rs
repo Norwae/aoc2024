@@ -5,6 +5,7 @@ use std::time::{Duration, Instant};
 use crate::day::handlers;
 use crate::Inputs;
 use crate::ui::UI;
+use crate::worker::run_on_worker;
 
 pub struct SlowConsoleUI;
 pub struct BenchmarkingConsoleUI;
@@ -43,9 +44,6 @@ impl UI for BenchmarkingConsoleUI {
         let handler_functions = handlers::<Vec<u8>>(!verbose).map(|f|f());
         let mut expected_answers = 0;
         let (sender, receive) = channel();
-        let pool = threadpool::Builder::new()
-            .thread_name("Worker".to_string())
-            .build();
         let clock_start = Instant::now();
         for day in  preselected_days {
             let index = *day as usize -1;
@@ -53,7 +51,7 @@ impl UI for BenchmarkingConsoleUI {
                 let sender= sender.clone();
                 let input = aoc.inputs[index].clone();
                 expected_answers += 1;
-                pool.execute(move ||{
+                run_on_worker(move ||{
                     execute_day_handler(callback.handler, input, sender)
                 })
             }

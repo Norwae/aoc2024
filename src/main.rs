@@ -2,6 +2,7 @@
 
 mod ui;
 mod day;
+mod worker;
 
 use std::fs::read;
 use clap::Parser;
