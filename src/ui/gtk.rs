@@ -155,15 +155,18 @@ fn perform_run(model: Rc<RefCell<UIModel>>, text: TextBuffer) {
 fn install_ui_update_callback(recv: Receiver<String>, text: TextBuffer) {
     timeout_add_local(Duration::from_millis(100),
                       move || {
-                          match recv.try_recv() {
-                              Ok(msg) => {
-                                  let mut iter = text.end_iter();
-                                  text.insert(&mut iter, &msg);
-                                  ControlFlow::Continue
+                          let mut iter = text.end_iter();
+                          for _ in 0..50 {
+                              match recv.try_recv() {
+                                  Ok(msg) => {
+                                      text.insert(&mut iter, &msg);
+                                  }
+                                  Err(TryRecvError::Empty) => return ControlFlow::Continue,
+                                  _ => return ControlFlow::Break
                               }
-                              Err(TryRecvError::Empty) => ControlFlow::Continue,
-                              _ => ControlFlow::Break
                           }
+
+                          return ControlFlow::Continue;
                       });
 }
 
