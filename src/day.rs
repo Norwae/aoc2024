@@ -1,5 +1,4 @@
 use std::io::Write;
-use crate::ui::{FullUI, OptimizedUI};
 
 mod day01;
 mod day02;
@@ -29,12 +28,13 @@ mod day25;
 
 #[derive(Clone)]
 pub struct Day<T : Write> {
-    pub handler: fn(&str, &mut T)
+    pub terse: fn(&str, T),
+    pub verbose: fn(&str, T)
 }
 
 #[macro_export] macro_rules! unimplemented_day {
     () => {
-        pub fn register<Out: crate::ui::UIOutput<T>, T: std::io::Write>() -> Option<crate::day::Day<T>> {
+        pub fn register<T: std::io::Write>() -> Option<crate::day::Day<T>> {
             None
         }
     };
@@ -45,14 +45,14 @@ pub struct Day<T : Write> {
          simple_day! { |input, out| {
              match parse(input) {
                  Ok(parsed) => {
-                     Out::info(out, format_args!("Parsed input successfully\n"));
+                     out.info(format_args!("Parsed input successfully\n"));
                      let part1 = $part1(&parsed);
-                     Out::info(out, format_args!("Completed part 1 calculation: {}\n", &part1));
+                     out.info(format_args!("Completed part 1 calculation: {}\n", &part1));
                      let part2 = $part2(&parsed);
                      format!("Part1: {}, Part2: {}", part1, part2)
                  },
                  Err(failed) => {
-                     Out::critical(out, format_args!("Parsing failed for {}: {}", input, failed));
+                     out.critical(format_args!("Parsing failed for {}: {}", input, failed));
                      "".to_string()
                  }
              }
@@ -65,46 +65,35 @@ pub struct Day<T : Write> {
         simple_day! { |$n, _out| $body }
     };
      (| $n:ident, $out:ident | $body:expr ) => {
-         use crate::ui::UIOutput;
+         use crate::ui::{UIOutput, FullUI, OptimizedUI};
          use crate::day::Day;
          use std::io::Write;
 
-         fn do_solve<Out: UIOutput<T>, T : Write>($n: &str, $out: &mut T){
-             Out::info($out, format_args!("Started {}\n", module_path!()));
+         fn do_solve<Out: UIOutput<T>, T : Write>($n: &str, raw: T){
+             let mut $out = Out::new(raw);
+             $out.info(format_args!("Started {}\n", module_path!()));
              let result = $body;
-             Out::result($out, format_args!("{}: {result}\n", module_path!()));
+             $out.result(format_args!("{}: {result}\n", module_path!()));
          }
-         pub fn register<Out: UIOutput<T>, T: Write>() -> Option<Day<T>> {
-             Some(Day { handler: do_solve::<Out, T> })
+         pub fn register<T: Write>() -> Option<Day<T>> {
+             Some(Day {
+                 terse: do_solve::<OptimizedUI<T>, T>,
+                 verbose: do_solve::<FullUI<T>, T>
+             })
          }
      };
  }
 
-pub fn handlers<T: Write>(optimized: bool) -> [fn() -> Option<Day<T>>; 25] {
-    if optimized {
+pub fn handlers<T: Write>() -> [fn() -> Option<Day<T>>; 25] {
         [
-            day01::register::<OptimizedUI, T>, day02::register::<OptimizedUI, T>, day03::register::<OptimizedUI, T>,
-            day04::register::<OptimizedUI, T>, day05::register::<OptimizedUI, T>, day06::register::<OptimizedUI, T>,
-            day07::register::<OptimizedUI, T>, day08::register::<OptimizedUI, T>, day09::register::<OptimizedUI, T>,
-            day10::register::<OptimizedUI, T>, day11::register::<OptimizedUI, T>, day12::register::<OptimizedUI, T>,
-            day13::register::<OptimizedUI, T>, day14::register::<OptimizedUI, T>, day15::register::<OptimizedUI, T>,
-            day16::register::<OptimizedUI, T>, day17::register::<OptimizedUI, T>, day18::register::<OptimizedUI, T>,
-            day19::register::<OptimizedUI, T>, day20::register::<OptimizedUI, T>, day21::register::<OptimizedUI, T>,
-            day22::register::<OptimizedUI, T>, day23::register::<OptimizedUI, T>, day24::register::<OptimizedUI, T>,
-            day25::register::<OptimizedUI, T>
+            day01::register::<T>, day02::register::<T>, day03::register::<T>,
+            day04::register::<T>, day05::register::<T>, day06::register::<T>,
+            day07::register::<T>, day08::register::<T>, day09::register::<T>,
+            day10::register::<T>, day11::register::<T>, day12::register::<T>,
+            day13::register::<T>, day14::register::<T>, day15::register::<T>,
+            day16::register::<T>, day17::register::<T>, day18::register::<T>,
+            day19::register::<T>, day20::register::<T>, day21::register::<T>,
+            day22::register::<T>, day23::register::<T>, day24::register::<T>,
+            day25::register::<T>
         ]
-    } else {
-        [
-            day01::register::<FullUI, T>, day02::register::<FullUI, T>, day03::register::<FullUI, T>,
-            day04::register::<FullUI, T>, day05::register::<FullUI, T>, day06::register::<FullUI, T>,
-            day07::register::<FullUI, T>, day08::register::<FullUI, T>, day09::register::<FullUI, T>,
-            day10::register::<FullUI, T>, day11::register::<FullUI, T>, day12::register::<FullUI, T>,
-            day13::register::<FullUI, T>, day14::register::<FullUI, T>, day15::register::<FullUI, T>,
-            day16::register::<FullUI, T>, day17::register::<FullUI, T>, day18::register::<FullUI, T>,
-            day19::register::<FullUI, T>, day20::register::<FullUI, T>, day21::register::<FullUI, T>,
-            day22::register::<FullUI, T>, day23::register::<FullUI, T>, day24::register::<FullUI, T>,
-            day25::register::<FullUI, T>
-        ]
-    }
-
 }

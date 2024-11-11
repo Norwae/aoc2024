@@ -132,16 +132,16 @@ fn perform_run(model: Rc<RefCell<UIModel>>, text: TextBuffer) {
     let model = model.borrow();
     let verbose = model.verbose;
 
-    for day in model.days.iter().cloned(){
+    for day in model.days.iter().cloned() {
         match day {
-            Some(UIDay { active, input, verbose_handler, terse_handler})
-                if active => {
-                let mut wrapper = WrapSender(sender.clone(), Vec::new());
+            Some(UIDay { active, input, verbose_handler, terse_handler })
+            if active => {
+                let wrapper = WrapSender(sender.clone(), Vec::new());
                 run_on_worker(move || {
                     if verbose {
-                        verbose_handler(&input, &mut wrapper)
+                        verbose_handler(&input, wrapper)
                     } else {
-                        terse_handler(&input, &mut wrapper)
+                        terse_handler(&input, wrapper)
                     }
                 });
             }
@@ -154,17 +154,17 @@ fn perform_run(model: Rc<RefCell<UIModel>>, text: TextBuffer) {
 
 fn install_ui_update_callback(recv: Receiver<String>, text: TextBuffer) {
     timeout_add_local(Duration::from_millis(100),
-      move || {
-          match recv.try_recv() {
-              Ok(msg) => {
-                  let mut iter = text.end_iter();
-                  text.insert(&mut iter, &msg);
-                  ControlFlow::Continue
-              }
-              Err(TryRecvError::Empty) => ControlFlow::Continue,
-              _ => ControlFlow::Break
-          }
-      });
+                      move || {
+                          match recv.try_recv() {
+                              Ok(msg) => {
+                                  let mut iter = text.end_iter();
+                                  text.insert(&mut iter, &msg);
+                                  ControlFlow::Continue
+                              }
+                              Err(TryRecvError::Empty) => ControlFlow::Continue,
+                              _ => ControlFlow::Break
+                          }
+                      });
 }
 
 fn build_big_run_button(model: Rc<RefCell<UIModel>>, text: TextBuffer) -> Button {
@@ -240,8 +240,8 @@ fn build_output_view() -> (TextBuffer, Widget) {
 struct UIDay {
     active: bool,
     input: String,
-    verbose_handler: fn(&str, &mut WrapSender),
-    terse_handler: fn(&str, &mut WrapSender)
+    verbose_handler: fn(&str, WrapSender),
+    terse_handler: fn(&str, WrapSender),
 }
 
 struct UIModel {
@@ -253,22 +253,21 @@ impl UIModel {
     fn new(activations: &[u8], advent_of_code: Inputs, verbose: bool) -> Self {
         let mut days = [const { None }; 25];
 
-        let iter = handlers::<WrapSender>(!verbose).into_iter().map(|f|f())
-            .zip(handlers::<WrapSender>(verbose).map(|f|f()))
+        let iter = handlers::<WrapSender>().into_iter().map(|f| f())
             .zip(advent_of_code.inputs.into_iter())
             .enumerate();
 
         for (n, tpl) in iter {
             days[n] = match tpl {
-                (((Some(Day { handler: terse_handler }), Some(Day {handler: verbose_handler})), input)) => {
+                (Some(Day { terse: terse_handler, verbose: verbose_handler }), input) => {
                     let active = activations.iter().find(|it| **it == n as u8 + 1).is_some();
                     Some(UIDay {
                         input,
                         active,
                         terse_handler,
-                        verbose_handler
+                        verbose_handler,
                     })
-                },
+                }
                 _ => None
             }
         }

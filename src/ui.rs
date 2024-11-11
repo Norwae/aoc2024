@@ -15,7 +15,7 @@ use super::Inputs;
 pub enum UIMode {
     GTK,
     Console,
-    Optimized
+    Optimized,
 }
 
 /*
@@ -27,13 +27,15 @@ avoid having a conditional branch if possible. Is this psychotic? Maybe.
 */
 
 pub trait UIOutput<T: Write> {
-    fn info(writer: &mut T, fmt: Arguments<'_>);
-    fn critical(writer: &mut T, fmt: Arguments<'_>);
-    fn result(writer: &mut T, fmt: Arguments<'_>);
+    fn new(writer: T) -> Self;
+    fn info(&mut self, fmt: Arguments<'_>);
+    fn critical(&mut self, fmt: Arguments<'_>);
+    fn result(&mut self, fmt: Arguments<'_>);
 }
 
-pub struct FullUI();
-pub struct OptimizedUI();
+pub struct FullUI<T>(T);
+
+pub struct OptimizedUI<T>(T);
 
 fn write_wrapped<T: Write>(writer: &mut T, tag: &str, args: Arguments<'_>) -> Result<(), std::io::Error> {
     writer.write(tag.as_bytes())?;
@@ -47,29 +49,33 @@ fn write_tagged<T: Write>(writer: &mut T, tag: &str, args: Arguments<'_>) {
     }
 }
 
-impl <T: Write> UIOutput<T> for FullUI {
-    fn info(writer: &mut T, fmt: Arguments<'_>) {
-        write_tagged(writer, "INFO: ", fmt)
+impl<T: Write> UIOutput<T> for FullUI<T> {
+    fn new(writer: T) -> Self {
+        Self(writer)
+    }
+    fn info(&mut self, fmt: Arguments<'_>) {
+        write_tagged(&mut self.0, "INFO: ", fmt)
     }
 
-    fn critical(writer: &mut T, fmt: Arguments<'_>) {
-        write_tagged(writer, "CRITICAL: ", fmt)
+    fn critical(&mut self, fmt: Arguments<'_>) {
+        write_tagged(&mut self.0, "CRITICAL: ", fmt)
     }
 
-    fn result(writer: &mut T, fmt: Arguments<'_>) {
-        write_tagged(writer, "RESULT:", fmt)
+    fn result(&mut self, fmt: Arguments<'_>) {
+        write_tagged(&mut self.0, "RESULT:", fmt)
     }
 }
 
-impl <T: Write> UIOutput<T> for OptimizedUI {
-    fn info(_writer: &mut T, _fmt: Arguments<'_>) {
+impl<T: Write> UIOutput<T> for OptimizedUI<T> {
+    fn new(writer: T) -> Self {
+        Self(writer)
     }
+    fn info(&mut self, _fmt: Arguments<'_>) {}
 
-    fn critical(_writer: &mut T, _fmt: Arguments<'_>) {
-    }
+    fn critical(&mut self, _fmt: Arguments<'_>) {}
 
-    fn result(writer: &mut T, fmt: Arguments<'_>) {
-        write_tagged(writer, "", fmt)
+    fn result(&mut self, fmt: Arguments<'_>) {
+        write_tagged(&mut self.0, "", fmt)
     }
 }
 
@@ -78,7 +84,7 @@ pub trait UI {
 }
 
 pub fn select_ui(mode: UIMode) -> Box<dyn UI> {
-    match mode  {
+    match mode {
         UIMode::GTK => Box::new(GtkUI),
         UIMode::Console => Box::new(SlowConsoleUI),
         UIMode::Optimized => Box::new(BenchmarkingConsoleUI)
