@@ -28,8 +28,8 @@ mod day25;
 
 #[derive(Clone)]
 pub struct Day<T: Write> {
-    pub terse: for <'source, 'sink> fn(&'source str, &'sink mut T),
-    pub verbose: for <'source, 'sink> fn(&'source str, &'sink mut T),
+    pub terse: fn(&str, &mut T),
+    pub verbose: fn(&str, &mut T),
 }
 
 #[macro_export] macro_rules! unimplemented_day {
@@ -118,7 +118,7 @@ pub struct Day<T: Write> {
          use crate::day::Day;
          use std::io::Write;
 
-         fn do_solve<'a, Out: UIOutput<&'a mut T>, T : Write + 'a>($n: &str, mut $out: Out){
+         fn do_solve<Out: UIOutput<T>, T : Write>($n: &str, mut $out: Out){
              $out.info(format_args!("Started {}\n", module_path!()));
              let result = $body;
              $out.result(format_args!("{}: {result}\n", module_path!()));

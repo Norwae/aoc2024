@@ -30,14 +30,14 @@ impl UI for SlowConsoleUI {
     }
 }
 
-fn execute_day_handler(function:  fn(&str, &mut Vec<u8>), input: String, out: Sender<OptimizedOutput>) {
+fn execute_day_handler(function: fn(&str, &mut Vec<u8>), input: String, out: Sender<OptimizedOutput>) {
     let mut output_buffer = Vec::new();
     let start = Instant::now();
     function(&input, &mut output_buffer);
     let timing = Instant::now() - start;
     out.send(OptimizedOutput {
         timing,
-        output_buffer
+        output_buffer,
     }).unwrap()
 }
 
