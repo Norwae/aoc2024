@@ -37,8 +37,8 @@ fn execute_day_handler(function:  fn(&str, BenchmarkBuffer), input: String, out:
     let start = Instant::now();
     function(&input, BenchmarkBuffer(output_buffer.clone()));
     let timing = Instant::now() - start;
-    let outbut_buffer = Rc::into_inner(output_buffer).expect("Sole owner");
-    let output_buffer = outbut_buffer.into_inner();
+    let output_buffer = Rc::into_inner(output_buffer).expect("Sole owner");
+    let output_buffer = output_buffer.into_inner();
     out.send(OptimizedOutput {
         timing,
         output_buffer

@@ -40,6 +40,28 @@ pub struct Day<T : Write> {
     };
 }
 
+
+#[macro_export] macro_rules! memoized_day {
+     ($parse:ident, $part1:ident, $part2:ident) => {
+         simple_day! { |input, out| {
+             match parse(input) {
+                 Ok(parsed) => {
+                     out.info(format_args!("Parsed input successfully\n"));
+                     let (part1, memo) = $part1(&parsed);
+                     out.info(format_args!("Completed part 1 calculation: {} (memo {:?})\n", &part1, &memo));
+                     let part2 = $part2(&parsed, memo);
+                     format!("Part1: {}, Part2: {}", part1, part2)
+                 },
+                 Err(failed) => {
+                     out.critical(format_args!("Parsing failed for {}: {}", input, failed));
+                     "".to_string()
+                 }
+             }
+         }}
+     };
+ }
+
+
 #[macro_export] macro_rules! parsed_day {
      ($parse:ident, $part1:ident, $part2:ident) => {
          simple_day! { |input, out| {
