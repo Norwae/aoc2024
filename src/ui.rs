@@ -57,7 +57,7 @@ impl<T: Write> UIOutput<T> for FullUI<T> {
 impl<T: Write> UIOutput<T> for OptimizedUI<T> {
     fn info(&mut self, _fmt: Arguments<'_>) {}
 
-    fn critical(&mut self, _fmt: Arguments<'_>) {}
+    fn critical(&mut self, fmt: Arguments<'_>) {}
 
     fn result(&mut self, fmt: Arguments<'_>) {
         write_tagged(&mut self.0, "", fmt)

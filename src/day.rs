@@ -31,7 +31,7 @@ pub struct Day<T: Write> {
     pub verbose: fn(&str, &mut T),
 }
 
-impl <T: Write> Clone for Day<T> {
+impl<T: Write> Clone for Day<T> {
     fn clone(&self) -> Self {
         Self { terse: self.terse, verbose: self.verbose }
     }
@@ -96,21 +96,22 @@ impl <T: Write> Clone for Day<T> {
         parsed_day!($parse, $part1, unimplemented_part);
     };
     ($parse:ident, $part1:ident, $part2:ident) => {
-         simple_day! { |input, out| {
-             match parse(input) {
-                 Ok(parsed) => {
-                     out.info(format_args!("Parsed input successfully\n"));
-                     let part1 = $part1(&parsed);
-                     out.info(format_args!("Completed part 1 calculation: {}\n", &part1));
-                     let part2 = $part2(parsed);
-                     format!("Part1: {}, Part2: {}", part1, part2)
-                 },
-                 Err(failed) => {
-                     out.critical(format_args!("Parsing failed for {}: {}", input, failed));
-                     "".to_string()
-                 }
-             }
-         }}
+        simple_day! { |input, out| {
+            let parsed = parse(input, &mut out);
+            match parsed {
+                Ok(parsed) => {
+                    out.info(format_args!("Parsed input successfully\n"));
+                    let part1 = $part1(&parsed, &mut out);
+                    out.info(format_args!("Completed part 1 calculation: {}\n", &part1));
+                    let part2 = $part2(parsed, &mut out);
+                    format!("Part1: {}, Part2: {}", part1, part2)
+                },
+                Err(failed) => {
+                    out.critical(format_args!("Parsing failed for {}: {}", input, failed));
+                    "".to_string()
+                }
+            }
+        }}
     };
  }
 

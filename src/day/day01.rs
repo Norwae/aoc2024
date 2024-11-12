@@ -16,7 +16,7 @@ const STRING_VALUE_PAIRS: [(&'static str, i64, usize); 9] = [
 ];
 
 
-fn solve_generic(input: impl AsRef<Vec<i64>>, map: impl Fn(i64) -> Option<u64>) -> u64 {
+fn solve_generic<T: Write>(input: impl AsRef<Vec<i64>>, map: impl Fn(i64) -> Option<u64>, out: &mut impl UIOutput<T>) -> u64 {
     let mut sum = 0;
     let mut first = u64::MAX;
     let mut last = 0;
@@ -25,11 +25,13 @@ fn solve_generic(input: impl AsRef<Vec<i64>>, map: impl Fn(i64) -> Option<u64>) 
         let content = *content;
 
         if content == 0 {
-            if let Some(d0) = first.checked_mul(10) {
-                let two_digit_nr = d0 + last;
+            if first != u64::MAX {
+                let two_digit_nr = first * 10  + last;
                 sum += two_digit_nr;
+                first = u64::MAX
+            } else {
+                out.critical(format_args!("Skipped an empty line, input is borked\n"))
             }
-            first = u64::MAX
         } else if let Some(next) = map(content) {
             if first == u64::MAX {
                 first = next;
@@ -41,23 +43,23 @@ fn solve_generic(input: impl AsRef<Vec<i64>>, map: impl Fn(i64) -> Option<u64>) 
     sum
 }
 
-fn part1(input: &Vec<i64>) -> u64 {
+fn part1<T: Write>(input: &Vec<i64>, out: &mut impl UIOutput<T>) -> u64 {
     solve_generic(input, |c| {
         if c >= 0 {
             Some(c as u64)
         } else {
             None
         }
-    })
+    }, out)
 }
 
-fn part2(input: Vec<i64>) -> u64 {
+fn part2<T: Write>(input: Vec<i64>, out: &mut impl UIOutput<T>) -> u64 {
     solve_generic(&input, |c| {
         Some(c.unsigned_abs())
-    })
+    }, out)
 }
 
-fn parse(mut input: &str) -> Result<Vec<i64>, !> {
+fn parse<T: Write>(mut input: &str, _i: &mut impl UIOutput<T>) -> Result<Vec<i64>, !> {
     let mut result = Vec::new();
 
     'outer: while !input.is_empty() {
