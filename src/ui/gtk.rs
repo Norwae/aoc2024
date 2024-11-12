@@ -120,14 +120,10 @@ impl Write for WrapSender {
 
 fn input_from_input_sidebar(sidebar: &StackSidebar, day: usize) -> String {
     let buffer = sidebar.stack().expect("Stack installed")
-        .child_by_name(&format!("day_{}", day))
-        .expect("Child present")
-        .downcast::<ScrolledWindow>()
-        .expect("Scroller")
-        .child()
-        .expect("Text present")
-        .downcast::<TextView>()
-        .expect("Text")
+        .child_by_name(&format!("day_{}", day)).expect("Child present")
+        .downcast::<ScrolledWindow>().expect("Scroller")
+        .child().expect("Text present")
+        .downcast::<TextView>().expect("Text")
         .buffer();
     buffer.text(&mut buffer.start_iter(), &mut buffer.end_iter(), false).to_string()
 }
