@@ -25,8 +25,10 @@ fn solve_generic(input: impl AsRef<Vec<i64>>, map: impl Fn(i64) -> Option<u64>) 
         let content = *content;
 
         if content == 0 {
-            let two_digit_nr = 10 * first + last;
-            sum += two_digit_nr;
+            if let Some(d0) = first.checked_mul(10) {
+                let two_digit_nr = d0 + last;
+                sum += two_digit_nr;
+            }
             first = u64::MAX
         } else if let Some(next) = map(content) {
             if first == u64::MAX {
