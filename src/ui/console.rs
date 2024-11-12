@@ -12,11 +12,11 @@ pub struct SlowConsoleUI;
 pub struct BenchmarkingConsoleUI;
 
 impl UI for SlowConsoleUI {
-    fn run(&self, preselected_days: &[u8], aoc: Inputs, verbose: bool) -> ExitCode {
+    fn run(&self, preselected_days: &[usize], aoc: Inputs, verbose: bool) -> ExitCode {
         let handlers = handlers::<Stdout>();
         for day in preselected_days {
-            let index = *day as usize - 1;
-            if let Some(day) = handlers[index]() {
+            let index = *day  - 1;
+            if let Some(day) = &handlers[index] {
                 let handler = if verbose {
                     day.verbose
                 } else {
@@ -47,13 +47,13 @@ struct OptimizedOutput {
 }
 
 impl UI for BenchmarkingConsoleUI {
-    fn run(&self, preselected_days: &[u8], aoc: Inputs, verbose: bool) -> ExitCode {
-        let handler_functions = handlers::<Vec<u8>>().map(|f| f());
+    fn run(&self, preselected_days: &[usize], aoc: Inputs, verbose: bool) -> ExitCode {
+        let handler_functions = handlers::<Vec<u8>>();
         let mut expected_answers = 0;
         let (sender, receive) = channel();
         let clock_start = Instant::now();
         for day in preselected_days {
-            let index = *day as usize - 1;
+            let index = *day - 1;
             if let Some(callbacks) = &handler_functions[index] {
                 let sender = sender.clone();
                 let handler = if verbose {

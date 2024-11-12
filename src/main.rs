@@ -24,9 +24,10 @@ struct Cli {
     input_path: PathBuf,
     /// days to run (don't specify to run all available)
     #[arg(value_parser = clap::value_parser ! (u8).range(1..=25))]
-    run_days: Vec<u8>,
+    run_days: Vec<usize>,
 }
 
+#[derive(Clone)]
 struct Inputs {
     inputs: [String; 25],
 }
@@ -48,7 +49,7 @@ impl Inputs {
 }
 
 
-static ALL_ACTIVE: [u8; 25] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25];
+static ALL_ACTIVE: [usize; 25] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25];
 
 fn main() -> ExitCode {
     let Cli { verbose, input_path, run_days, ui_mode } = Cli::parse();

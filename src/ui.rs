@@ -65,7 +65,7 @@ impl<T: Write> UIOutput<T> for OptimizedUI<T> {
 }
 
 pub trait UI {
-    fn run(&self, preselected_days: &[u8], inputs: Inputs, verbose: bool) -> ExitCode;
+    fn run(&self, preselected_days: &[usize], inputs: Inputs, verbose: bool) -> ExitCode;
 }
 
 pub fn select_ui(mode: UIMode) -> Box<dyn UI> {

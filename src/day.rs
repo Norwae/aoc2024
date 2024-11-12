@@ -26,10 +26,15 @@ mod day23;
 mod day24;
 mod day25;
 
-#[derive(Clone)]
 pub struct Day<T: Write> {
     pub terse: fn(&str, &mut T),
     pub verbose: fn(&str, &mut T),
+}
+
+impl <T: Write> Clone for Day<T> {
+    fn clone(&self) -> Self {
+        Self { terse: self.terse, verbose: self.verbose }
+    }
 }
 
 #[macro_export] macro_rules! unimplemented_day {
@@ -141,16 +146,16 @@ pub struct Day<T: Write> {
      };
  }
 
-pub fn handlers<T: Write>() -> [fn() -> Option<Day<T>>; 25] {
+pub fn handlers<T: Write>() -> [Option<Day<T>>; 25] {
     [
-        day01::register::<T>, day02::register::<T>, day03::register::<T>,
-        day04::register::<T>, day05::register::<T>, day06::register::<T>,
-        day07::register::<T>, day08::register::<T>, day09::register::<T>,
-        day10::register::<T>, day11::register::<T>, day12::register::<T>,
-        day13::register::<T>, day14::register::<T>, day15::register::<T>,
-        day16::register::<T>, day17::register::<T>, day18::register::<T>,
-        day19::register::<T>, day20::register::<T>, day21::register::<T>,
-        day22::register::<T>, day23::register::<T>, day24::register::<T>,
-        day25::register::<T>
+        day01::register::<T>(), day02::register::<T>(), day03::register::<T>(),
+        day04::register::<T>(), day05::register::<T>(), day06::register::<T>(),
+        day07::register::<T>(), day08::register::<T>(), day09::register::<T>(),
+        day10::register::<T>(), day11::register::<T>(), day12::register::<T>(),
+        day13::register::<T>(), day14::register::<T>(), day15::register::<T>(),
+        day16::register::<T>(), day17::register::<T>(), day18::register::<T>(),
+        day19::register::<T>(), day20::register::<T>(), day21::register::<T>(),
+        day22::register::<T>(), day23::register::<T>(), day24::register::<T>(),
+        day25::register::<T>()
     ]
 }
