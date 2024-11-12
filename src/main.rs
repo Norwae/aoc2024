@@ -38,7 +38,10 @@ impl Inputs {
         for i in 0usize..25 {
             input_path.push(format!("{:02}", i + 1));
             if let Ok(loaded_contents) = read(&input_path) {
-                let stringified = String::from_utf8(loaded_contents).expect("utf8 input");
+                let mut stringified = String::from_utf8(loaded_contents).expect("utf8 input");
+                if !stringified.ends_with("\n") {
+                    stringified.push('\n');
+                }
                 inputs[i] = stringified
             }
             input_path.pop();

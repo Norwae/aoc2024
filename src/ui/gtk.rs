@@ -9,7 +9,6 @@ use gtk4::prelude::*;
 
 use std::sync::mpsc::{channel, Receiver, Sender, TryRecvError};
 use std::time::Duration;
-use lazy_static::lazy_static;
 use crate::day::{Day, handlers};
 
 use crate::Inputs;
@@ -18,9 +17,7 @@ use crate::worker::run_on_worker;
 
 pub struct GtkUI;
 
-lazy_static! {
-    static ref HANDLERS: [Option<Day<WrapSender>>; 25] = handlers();
-}
+static HANDLERS: [Option<Day<WrapSender>>; 25] = handlers();
 
 fn build_day_selector_widget(idx: usize, preselect: bool) -> CheckButton {
     let handler = &HANDLERS[idx];
@@ -204,7 +201,7 @@ fn build_ui(app: &Application, input: &[String], verbose: bool, preselected: &[u
     layout.attach(&page_box, 0, 2, 2, 1);
     let (text, widget) = build_output_view();
     layout.attach(&widget, 0, 3, 2, 1);
-    let button = build_big_run_button( text, day_selector_grid, selector, verbose);
+    let button = build_big_run_button(text, day_selector_grid, selector, verbose);
     layout.attach(&button, 1, 1, 1, 1);
 
     ApplicationWindow::builder()

@@ -39,7 +39,7 @@ impl <T: Write> Clone for Day<T> {
 
 #[macro_export] macro_rules! unimplemented_day {
     () => {
-        pub fn register<T: std::io::Write>() -> Option<crate::day::Day<T>> {
+        pub const fn register<T: std::io::Write>() -> Option<crate::day::Day<T>> {
             None
         }
     };
@@ -137,7 +137,7 @@ impl <T: Write> Clone for Day<T> {
              do_solve(input, full)
          }
 
-         pub fn register<T: Write>() -> Option<Day<T>> {
+         pub const fn register<T: Write>() -> Option<Day<T>> {
              Some(Day {
                  terse: solve_terse::<T>,
                  verbose: solve_verbose::<T>
@@ -146,7 +146,7 @@ impl <T: Write> Clone for Day<T> {
      };
  }
 
-pub fn handlers<T: Write>() -> [Option<Day<T>>; 25] {
+pub const fn handlers<T: Write>() -> [Option<Day<T>>; 25] {
     [
         day01::register::<T>(), day02::register::<T>(), day03::register::<T>(),
         day04::register::<T>(), day05::register::<T>(), day06::register::<T>(),
