@@ -12,10 +12,7 @@ use std::time::Duration;
 use crate::day::{Day, handlers};
 
 use crate::Inputs;
-use crate::ui::UI;
 use crate::worker::run_on_worker;
-
-pub struct GtkUI;
 
 static HANDLERS: [Option<Day<WrapSender>>; 25] = handlers();
 
@@ -229,25 +226,23 @@ fn build_output_view() -> (TextBuffer, Widget) {
     (buffer, widget.upcast())
 }
 
-impl UI for GtkUI {
-    fn run(&self, preselected_days: &[usize], inputs: Inputs, verbose: bool) -> ExitCode {
-        let app = Application::builder()
-            .application_id("codecentric.aoc.AoC2024")
-            .build();
-        let preselected = preselected_days.to_vec();
-        let inputs = Rc::new(inputs);
-        app.connect_activate(clone!(
+pub fn gtk_run(preselected_days: &[usize], inputs: Inputs, verbose: bool) -> ExitCode {
+    let app = Application::builder()
+        .application_id("codecentric.aoc.AoC2024")
+        .build();
+    let preselected = preselected_days.to_vec();
+    let inputs = Rc::new(inputs);
+    app.connect_activate(clone!(
             #[strong] inputs,
             move |app| {
                 build_ui(app, &inputs.inputs, verbose, &preselected)
             })
-        );
-        drop(inputs);
+    );
+    drop(inputs);
 
-        if app.run_with_args::<&str>(&[]).value() == 0 {
-            ExitCode::SUCCESS
-        } else {
-            ExitCode::FAILURE
-        }
+    if app.run_with_args::<&str>(&[]).value() == 0 {
+        ExitCode::SUCCESS
+    } else {
+        ExitCode::FAILURE
     }
 }

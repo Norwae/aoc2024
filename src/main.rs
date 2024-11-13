@@ -8,7 +8,7 @@ use std::fs::read;
 use clap::Parser;
 use std::path::PathBuf;
 use std::process::ExitCode;
-use crate::ui::{select_ui, UIMode};
+use crate::ui::{UIMode};
 
 
 #[derive(Parser, Debug)]
@@ -57,11 +57,10 @@ static ALL_ACTIVE: [usize; 25] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14,
 fn main() -> ExitCode {
     let Cli { verbose, input_path, run_days, ui_mode } = Cli::parse();
     let aoc = Inputs::new(input_path);
-    let ui = select_ui(ui_mode);
     let preselected = if !run_days.is_empty() {
         run_days.as_slice()
     } else {
         &ALL_ACTIVE
     };
-    ui.run(preselected, aoc, verbose)
+    ui_mode.run(preselected, aoc, verbose)
 }

@@ -3,11 +3,9 @@ mod console;
 
 use std::fmt::{Arguments};
 use std::io::Write;
-use crate::ui::console::{BenchmarkingConsoleUI, SlowConsoleUI};
 use std::process::ExitCode;
 use clap::ValueEnum;
 
-use crate::ui::gtk::GtkUI;
 use super::Inputs;
 
 
@@ -18,7 +16,18 @@ pub enum UIMode {
     Optimized,
 }
 
-pub trait UIOutput<T: Write> {
+impl UIMode {
+
+    pub fn run(self, preselected_days: &[usize], inputs: Inputs, verbose: bool) -> ExitCode {
+        match self {
+            UIMode::GTK => gtk::gtk_run(preselected_days, inputs, verbose),
+            UIMode::Console => console::console_run(preselected_days, inputs, verbose),
+            UIMode::Optimized => console::optimized_run(preselected_days, inputs, verbose)
+        }
+    }
+}
+
+pub trait UIOutput<T>  {
     fn info(&mut self, fmt: Arguments<'_>);
     fn critical(&mut self, fmt: Arguments<'_>);
     fn result(&mut self, fmt: Arguments<'_>);
@@ -57,21 +66,9 @@ impl<T: Write> UIOutput<T> for FullUI<T> {
 impl<T: Write> UIOutput<T> for OptimizedUI<T> {
     fn info(&mut self, _fmt: Arguments<'_>) {}
 
-    fn critical(&mut self, fmt: Arguments<'_>) {}
+    fn critical(&mut self, _fmt: Arguments<'_>) {}
 
     fn result(&mut self, fmt: Arguments<'_>) {
         write_tagged(&mut self.0, "", fmt)
-    }
-}
-
-pub trait UI {
-    fn run(&self, preselected_days: &[usize], inputs: Inputs, verbose: bool) -> ExitCode;
-}
-
-pub fn select_ui(mode: UIMode) -> Box<dyn UI> {
-    match mode {
-        UIMode::GTK => Box::new(GtkUI),
-        UIMode::Console => Box::new(SlowConsoleUI),
-        UIMode::Optimized => Box::new(BenchmarkingConsoleUI)
     }
 }
