@@ -2,22 +2,22 @@ use std::io::{stdout, Stdout};
 use std::process::ExitCode;
 use std::sync::mpsc::{channel, Sender};
 use std::time::{Duration, Instant};
-use crate::day::handlers;
-use crate::Inputs;
+use crate::Configuration;
+use crate::day::{Day, handlers};
 use crate::worker::run_on_worker;
 
 
-pub fn console_run(preselected_days: &[usize], aoc: Inputs, verbose: bool) -> ExitCode {
-    let handlers = handlers::<Stdout>();
-    for day in preselected_days {
+pub fn console_run(config: Configuration) -> ExitCode {
+    static HANDLERS: [Option<Day<Stdout>>; 25] = handlers::<Stdout>();
+    for day in &config.run_days {
         let index = *day - 1;
-        if let Some(day) = &handlers[index] {
-            let handler = if verbose {
-                day.verbose
+        if let Some(solution) = &HANDLERS[index] {
+            let handler = if config.verbose {
+                solution.verbose
             } else {
-                day.terse
+                solution.terse
             };
-            handler(&aoc.inputs[index], &mut stdout());
+            handler(&config.load_input(*day), &mut stdout());
         }
     }
 
@@ -40,21 +40,21 @@ struct OptimizedOutput {
     timing: Duration,
 }
 
-pub fn optimized_run(preselected_days: &[usize], aoc: Inputs, verbose: bool) -> ExitCode {
-    let handler_functions = handlers::<Vec<u8>>();
+pub fn optimized_run(config: Configuration) -> ExitCode {
+    static HANDLERS: [Option<Day<Vec<u8>>>; 25] = handlers::<Vec<u8>>();
+    let clock_start = Instant::now();
     let mut expected_answers = 0;
     let (sender, receive) = channel();
-    let clock_start = Instant::now();
-    for day in preselected_days {
+    for day in config.active_days() {
         let index = *day - 1;
-        if let Some(callbacks) = &handler_functions[index] {
+        if let Some(callbacks) = &HANDLERS[index] {
             let sender = sender.clone();
-            let handler = if verbose {
+            let handler = if config.verbose {
                 callbacks.verbose
             } else {
                 callbacks.terse
             };
-            let input = aoc.inputs[index].clone();
+            let input = config.load_input(index + 1);
             expected_answers += 1;
             run_on_worker(move || {
                 execute_day_handler(handler, input, sender)

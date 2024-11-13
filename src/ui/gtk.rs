@@ -9,9 +9,9 @@ use gtk4::prelude::*;
 
 use std::sync::mpsc::{channel, Receiver, Sender, TryRecvError};
 use std::time::Duration;
+use crate::Configuration;
 use crate::day::{Day, handlers};
 
-use crate::Inputs;
 use crate::worker::run_on_worker;
 
 static HANDLERS: [Option<Day<WrapSender>>; 25] = handlers();
@@ -42,7 +42,7 @@ fn build_input_editor(initial: &str) -> ScrolledWindow {
         .build()
 }
 
-fn build_input_stack_pages(inputs: &[String]) -> (LayoutBox, StackSidebar) {
+fn build_input_stack_pages(input_source: &Configuration) -> (LayoutBox, StackSidebar) {
     let layout = LayoutBox::new(Orientation::Horizontal, 2);
     let stack = Stack::new();
     let separator = Separator::new(Orientation::Vertical);
@@ -52,11 +52,11 @@ fn build_input_stack_pages(inputs: &[String]) -> (LayoutBox, StackSidebar) {
         .height_request(400)
         .build();
 
-    for d in HANDLERS.iter().zip(inputs).enumerate() {
-        if let (n, (Some(_), str)) = d {
-            let input_editor = build_input_editor(str);
-            let name = format!("day_{}", n);
-            let label = format!("Day {}", n + 1);
+    for d in HANDLERS.iter().enumerate() {
+        if let (idx, Some(_)) = d {
+            let input_editor = build_input_editor(&input_source.load_input(idx + 1));
+            let name = format!("day_{}", idx);
+            let label = format!("Day {}", idx + 1);
             stack.add_titled(&input_editor, Some(&name), &label);
         }
     }
@@ -186,15 +186,16 @@ fn build_verbose_control(initial: bool) -> CheckButton {
         .build()
 }
 
-fn build_ui(app: &Application, input: &[String], verbose: bool, preselected: &[usize]) {
+fn build_ui(app: &Application, config: &Configuration) {
+
     let layout = Grid::builder()
         .column_spacing(4)
         .build();
-    let day_selector_grid = build_day_selector_grid(preselected);
+    let day_selector_grid = build_day_selector_grid(config.active_days());
     layout.attach(&day_selector_grid, 0, 0, 2, 1);
-    let verbose = build_verbose_control(verbose);
+    let verbose = build_verbose_control(config.verbose);
     layout.attach(&verbose, 0, 1, 1, 1);
-    let (page_box, selector) = build_input_stack_pages(input);
+    let (page_box, selector) = build_input_stack_pages(&config);
     layout.attach(&page_box, 0, 2, 2, 1);
     let (text, widget) = build_output_view();
     layout.attach(&widget, 0, 3, 2, 1);
@@ -226,19 +227,14 @@ fn build_output_view() -> (TextBuffer, Widget) {
     (buffer, widget.upcast())
 }
 
-pub fn gtk_run(preselected_days: &[usize], inputs: Inputs, verbose: bool) -> ExitCode {
+pub fn gtk_run(config: Configuration) -> ExitCode {
+    let config = Rc::new(config);
     let app = Application::builder()
         .application_id("codecentric.aoc.AoC2024")
         .build();
-    let preselected = preselected_days.to_vec();
-    let inputs = Rc::new(inputs);
-    app.connect_activate(clone!(
-            #[strong] inputs,
-            move |app| {
-                build_ui(app, &inputs.inputs, verbose, &preselected)
-            })
-    );
-    drop(inputs);
+    app.connect_activate(clone!(#[strong] config, move |app| {
+        build_ui(app, &config)
+    }));
 
     if app.run_with_args::<&str>(&[]).value() == 0 {
         ExitCode::SUCCESS

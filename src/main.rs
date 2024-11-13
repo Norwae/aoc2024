@@ -13,7 +13,7 @@ use crate::ui::{UIMode};
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
-struct Cli {
+struct Configuration {
     /// Frontend to load
     #[arg(long, default_value = "gtk", value_enum)]
     ui_mode: UIMode,
@@ -27,40 +27,39 @@ struct Cli {
     run_days: Vec<usize>,
 }
 
-#[derive(Clone)]
-struct Inputs {
-    inputs: [String; 25],
-}
+impl Configuration {
+    fn run(self) -> ExitCode {
+        self.ui_mode.run(self)
+    }
 
-impl Inputs {
-    fn new(mut input_path: PathBuf) -> Self {
-        let mut inputs = [const { String::new() }; 25];
-        for i in 0usize..25 {
-            input_path.push(format!("{:02}", i + 1));
-            if let Ok(loaded_contents) = read(&input_path) {
-                let mut stringified = String::from_utf8(loaded_contents).expect("utf8 input");
-                if !stringified.ends_with("\n") {
-                    stringified.push('\n');
-                }
-                inputs[i] = stringified
-            }
-            input_path.pop();
+    fn active_days(&self) -> &[usize]{
+        #[link_section=".rodata"]
+        static ALL_ACTIVE: [usize; 25] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25];
+
+        if self.run_days.is_empty() {
+            &ALL_ACTIVE
+        } else {
+            self.run_days.as_slice()
         }
+    }
 
-        Self { inputs }
+    fn load_input(&self, day: usize) -> String {
+        let mut path = self.input_path.clone();
+        path.push(format!("{:02}", day));
+
+        if let Ok(loaded_contents) = read(&path) {
+            let mut stringified = String::from_utf8(loaded_contents).expect("utf8 input");
+            if !stringified.ends_with("\n") {
+                stringified.push('\n');
+            }
+            stringified
+        } else {
+            "".to_string()
+        }
     }
 }
 
-
-static ALL_ACTIVE: [usize; 25] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25];
-
 fn main() -> ExitCode {
-    let Cli { verbose, input_path, run_days, ui_mode } = Cli::parse();
-    let aoc = Inputs::new(input_path);
-    let preselected = if !run_days.is_empty() {
-        run_days.as_slice()
-    } else {
-        &ALL_ACTIVE
-    };
-    ui_mode.run(preselected, aoc, verbose)
+    let cfg = Configuration::parse();
+    cfg.run()
 }

@@ -5,9 +5,7 @@ use std::fmt::{Arguments};
 use std::io::Write;
 use std::process::ExitCode;
 use clap::ValueEnum;
-
-use super::Inputs;
-
+use crate::Configuration;
 
 #[derive(Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq, ValueEnum)]
 pub enum UIMode {
@@ -18,11 +16,11 @@ pub enum UIMode {
 
 impl UIMode {
 
-    pub fn run(self, preselected_days: &[usize], inputs: Inputs, verbose: bool) -> ExitCode {
+    pub fn run(self, config: Configuration) -> ExitCode {
         match self {
-            UIMode::GTK => gtk::gtk_run(preselected_days, inputs, verbose),
-            UIMode::Console => console::console_run(preselected_days, inputs, verbose),
-            UIMode::Optimized => console::optimized_run(preselected_days, inputs, verbose)
+            UIMode::GTK => gtk::gtk_run(config),
+            UIMode::Console => console::console_run(config),
+            UIMode::Optimized => console::optimized_run(config)
         }
     }
 }
