@@ -5,7 +5,7 @@ parsed_day!(parse, part1, part2);
 
 const STRING_VALUE_PAIRS: [(&'static str, i64, usize); 9] = [
     ("one", -1, 2),
-    ("two", -2, 3),
+    ("two", -2, 2),
     ("three", -3, 4),
     ("four", -4, 4),
     ("five", -5, 3),
