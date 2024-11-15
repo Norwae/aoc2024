@@ -1,11 +1,9 @@
-use std::fmt::format;
 use std::io::{stdout, Stdout};
 use std::process::ExitCode;
-use std::sync::mpsc::{channel, Sender};
 use std::time::{Duration, Instant};
 use crate::Configuration;
 use crate::day::{Day, handlers};
-use crate::worker::run_on_worker;
+use crate::worker::parallelize;
 
 
 pub fn console_run(config: Configuration) -> ExitCode {
@@ -25,16 +23,16 @@ pub fn console_run(config: Configuration) -> ExitCode {
     ExitCode::SUCCESS
 }
 
-fn execute_day_handler(day: usize, function: fn(&str, &mut Vec<u8>), input: String, out: Sender<OptimizedOutput>) {
+fn execute_day_handler(day: usize, function: fn(&str, &mut Vec<u8>), input: String) -> OptimizedOutput {
     let mut output_buffer = Vec::new();
     let start = Instant::now();
     function(&input, &mut output_buffer);
     let timing = Instant::now() - start;
-    out.send(OptimizedOutput {
+    OptimizedOutput {
         day,
         timing,
         output_buffer,
-    }).unwrap()
+    }
 }
 
 struct OptimizedOutput {
@@ -46,32 +44,26 @@ struct OptimizedOutput {
 pub fn optimized_run(config: Configuration) -> ExitCode {
     static HANDLERS: [Option<Day<Vec<u8>>>; 25] = handlers::<Vec<u8>>();
     let clock_start = Instant::now();
-    let mut expected_answers = 0;
-    let (sender, receive) = channel();
-    for day in config.active_days() {
+    let tasks = config.active_days().into_iter().filter_map(|day| {
         let day = *day;
         let index = day - 1;
-        if let Some(callbacks) = &HANDLERS[index] {
-            let sender = sender.clone();
+        if let Some(handler) = &HANDLERS[index] {
             let handler = if config.verbose {
-                callbacks.verbose
+                handler.verbose
             } else {
-                callbacks.terse
+                handler.terse
             };
             let input = config.load_input(index + 1);
-            expected_answers += 1;
-            run_on_worker(move || {
-                execute_day_handler(day, handler, input, sender)
-            })
+            Some(move || execute_day_handler(day, handler, input))
+        } else {
+            None
         }
-    }
-    drop(sender);
-
+    });
     let mut total_duration = Duration::ZERO;
     let mut overall_output = String::new();
     let mut day_eval_timings = String::new();
-    for _ in 0..expected_answers {
-        let OptimizedOutput { day, timing, output_buffer } = receive.recv().expect("Received answer");
+    let results = parallelize(tasks, false);
+    for OptimizedOutput {day, timing, output_buffer} in results {
         total_duration += timing;
         overall_output += &String::from_utf8(output_buffer).expect("Valid utf8");
         day_eval_timings += &format!("Day {day}: {timing:?}")

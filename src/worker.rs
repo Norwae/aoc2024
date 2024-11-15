@@ -11,7 +11,7 @@ pub fn run_on_worker(function: impl FnOnce() + Send + 'static) {
     (*THREADPOOL).execute(function)
 }
 
-pub fn parallelize<F, R, I>(candidates: I) -> Vec<R>
+pub fn parallelize<F, R, I>(tasks: I, ordered: bool) -> Vec<R>
 where
     R: Send + 'static,
     F: FnOnce() -> R + Send + 'static,
@@ -19,7 +19,7 @@ where
 {
     let (send, recv) = channel();
     let mut count = 0;
-    for (n, f) in candidates.into_iter().enumerate() {
+    for (n, f) in tasks.into_iter().enumerate() {
         let send = send.clone();
         run_on_worker(move || {
             let result = f();
@@ -29,7 +29,9 @@ where
         count += 1;
     }
     let mut tagged_answers = (0..count).map(|_| recv.recv().expect("Got result")).collect::<Vec<_>>();
-    tagged_answers.sort_by_key(|(fst, _)| *fst);
+    if ordered {
+        tagged_answers.sort_by_key(|(fst, _)| *fst);
+    }
     tagged_answers.into_iter().map(|(_, snd)| snd).collect()
 }
 
@@ -114,7 +116,7 @@ mod test {
                 n
             }
         }).collect::<Vec<_>>();
-        let result = parallelize(tasks);
+        let result = parallelize(tasks, true);
         assert_eq!(Vec::from_iter(0..50usize), result)
     }
 }
