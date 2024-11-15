@@ -18,17 +18,20 @@ where
     I: IntoIterator<Item=F>,
 {
     let (send, recv) = channel();
-    let mut count = 0;
     for (n, f) in tasks.into_iter().enumerate() {
         let send = send.clone();
         run_on_worker(move || {
             let result = f();
             let tagged_result = (n, result);
-            send.send(tagged_result).expect("Sending okay");
+            send.send(tagged_result).unwrap();
         });
-        count += 1;
     }
-    let mut tagged_answers = (0..count).map(|_| recv.recv().expect("Got result")).collect::<Vec<_>>();
+    drop(send);
+
+    let mut tagged_answers = Vec::new();
+    while let Ok(tpl) = recv.recv(){
+        tagged_answers.push(tpl)
+    }
     if ordered {
         tagged_answers.sort_by_key(|(fst, _)| *fst);
     }
@@ -41,7 +44,7 @@ where
     O: UIOutput<W>,
     F: FnOnce() -> R + Send + 'static,
     R: Send + 'static,
-    I: IntoIterator<Item=F>
+    I: IntoIterator<Item=F>,
 {
     let available_threads = THREADPOOL.max_count() - 1;
     let mut n = 0;
@@ -96,9 +99,9 @@ mod test {
 
     #[test]
     fn discards_race_tail() {
-        let tasks = (0u64..100).rev().map(|n|{
+        let tasks = (0u64..100).rev().map(|n| {
             let delay = Duration::from_millis(n);
-            move ||{
+            move || {
                 sleep(delay);
                 n
             }
