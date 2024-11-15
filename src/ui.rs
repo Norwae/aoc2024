@@ -1,3 +1,4 @@
+#[cfg(feature = "gtk_ui")]
 mod gtk;
 mod console;
 
@@ -9,6 +10,7 @@ use crate::Configuration;
 
 #[derive(Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq, ValueEnum)]
 pub enum UIMode {
+    #[cfg(feature = "gtk_ui")]
     GTK,
     Console,
     Optimized,
@@ -18,6 +20,7 @@ impl UIMode {
 
     pub fn run(self, config: Configuration) -> ExitCode {
         match self {
+            #[cfg(feature = "gtk_ui")]
             UIMode::GTK => gtk::gtk_run(config),
             UIMode::Console => console::console_run(config),
             UIMode::Optimized => console::optimized_run(config)
