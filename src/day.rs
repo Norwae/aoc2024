@@ -1,6 +1,7 @@
 use std::error::Error;
-use std::fmt::Display;
+use std::fmt::{Display, Formatter};
 use std::io::Write;
+use nom::IResult;
 
 use crate::ui::UIOutput;
 
@@ -73,6 +74,35 @@ pub fn parse_and_execute<
         Err(failed) => {
             output.critical(format_args!("Parsing failed for {}: {}", input, failed));
             "".to_string()
+        }
+    }
+}
+
+
+#[derive(Debug)]
+struct SimpleError(String);
+impl Display for SimpleError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&self.0)
+    }
+}
+impl Error for SimpleError{}
+
+fn nom_parsed<T: Write, UI: UIOutput<T>, ParseResult, NomFunc: FnOnce(&str) -> IResult<&str, ParseResult>>(
+    nom_handler: NomFunc
+) -> impl FnOnce(&str, &mut UI) -> Result<ParseResult, SimpleError> {
+    |input, output| {
+        match nom_handler(input) {
+            Ok((rest, parsed)) => {
+                let rest = rest.trim();
+                if !rest.is_empty() {
+                    output.critical(format_args!("Relevant unparsed tail: {}\n", rest))
+                }
+                Ok(parsed)
+            },
+            Err(e) => {
+                Err(SimpleError(format!("{e}")))
+            }
         }
     }
 }

@@ -14,3 +14,4 @@ gtk4 = {  version = "0.9.3", optional = true }
 threadpool = "1.8.1"
 lazy_static = "1.5.0"
 rand = "0.9.0-alpha.2"
+nom = "7.1.3"
