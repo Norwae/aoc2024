@@ -66,7 +66,7 @@ pub fn optimized_run(config: Configuration) -> ExitCode {
     for OptimizedOutput {day, timing, output_buffer} in results {
         total_duration += timing;
         overall_output += &String::from_utf8(output_buffer).expect("Valid utf8");
-        day_eval_timings += &format!("Day {day}: {timing:?}")
+        day_eval_timings += &format!("Day {day}: {timing:?}\n")
     }
 
     let clock_duration = Instant::now() - clock_start;

@@ -2,17 +2,9 @@ use crate::*;
 
 
 parsed_day!(parse, |input, output|{
-    solve_generic(input, |c|{
-        if c >= 0 {
-            Some(c as u64)
-        } else {
-            None
-        }
-    }, output)
+    solve_generic(input, output, |c|c)
 }, |input, output|{
-    solve_generic(input, |c|{
-        Some(c.abs() as u64)
-    }, output)
+    solve_generic(input, output, i64::abs)
 });
 
 const STRING_VALUE_PAIRS: [(&'static str, i64, usize); 9] = [
@@ -28,27 +20,30 @@ const STRING_VALUE_PAIRS: [(&'static str, i64, usize); 9] = [
 ];
 
 
-fn solve_generic<T: Write>(input: impl AsRef<Vec<i64>>, map: impl Fn(i64) -> Option<u64>, out: &mut impl UIOutput<T>) -> u64 {
+fn solve_generic<T: Write>(input: impl AsRef<Vec<i64>>, out: &mut impl UIOutput<T>, process: impl Fn(i64) -> i64) -> i64 {
     let mut sum = 0;
-    let mut first = u64::MAX;
+    let mut first = i64::MAX;
     let mut last = 0;
 
     for content in input.as_ref().into_iter() {
         let content = *content;
 
         if content == 0 {
-            if first != u64::MAX {
-                let two_digit_nr = first * 10  + last;
+            if first != i64::MAX {
+                let two_digit_nr = first * 10 + last;
                 sum += two_digit_nr;
-                first = u64::MAX
+                first = i64::MAX
             } else {
                 out.critical(format_args!("Skipped an empty line, input is borked\n"))
             }
-        } else if let Some(next) = map(content) {
-            if first == u64::MAX {
-                first = next;
+        } else {
+            let content = process(content);
+            if content > 0 {
+                if first == i64::MAX {
+                    first = content;
+                }
+                last = content;
             }
-            last = next;
         }
     }
 
@@ -69,7 +64,7 @@ fn parse<T: Write>(mut input: &str, _i: &mut impl UIOutput<T>) -> Result<Vec<i64
                 if input.starts_with(prefix) {
                     result.push(*value);
                     input = &input[*skip..];
-                    continue 'outer
+                    continue 'outer;
                 }
             }
         }

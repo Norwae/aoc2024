@@ -60,7 +60,7 @@ where
         let send = send.clone();
         run_on_worker(move || {
             let result = candidate();
-            _ = send.try_send(result)
+            _ = send.try_send(result);
         })
     }
 

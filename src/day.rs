@@ -77,17 +77,14 @@ pub fn parse_and_execute<
     }
 }
 
-pub fn unimplemented_part<T>(_input: &mut T) -> &'static str {
-    "UNIMPLEMENTED"
-}
 
 #[macro_export] macro_rules! parsed_day {
     ($parse:ident) => {
-        use crate::day::unimplemented_part;
+        fn unimplemented_part<T>(_input: &mut T) -> &'static str { "UNIMPLEMENTED" }
         parsed_day!($parse, unimplemented_part, unimplemented_part);
     };
     ($parse:ident, $part1:ident) => {
-        use crate::day::unimplemented_part;
+        fn unimplemented_part<T>(_input: &mut T) -> &'static str { "UNIMPLEMENTED" }
         parsed_day!($parse, $part1, unimplemented_part);
     };
     ($parse:expr, $part1:expr, $part2:expr) => {
@@ -99,8 +96,8 @@ pub fn unimplemented_part<T>(_input: &mut T) -> &'static str {
 #[macro_export] macro_rules! simple_day {
     ($name:ident) => {
         simple_day!(|input, output| {
-            $name(input, output)
-        })
+            $name(input, &mut output)
+        });
     };
     (| $n:ident | $body:expr) => {
         simple_day! { |$n, _out| $body }
