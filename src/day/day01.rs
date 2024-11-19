@@ -1,7 +1,19 @@
 use crate::*;
 
 
-parsed_day!(parse, part1, part2);
+parsed_day!(parse, |input, output|{
+    solve_generic(input, |c|{
+        if c >= 0 {
+            Some(c as u64)
+        } else {
+            None
+        }
+    }, output)
+}, |input, output|{
+    solve_generic(input, |c|{
+        Some(c.abs() as u64)
+    }, output)
+});
 
 const STRING_VALUE_PAIRS: [(&'static str, i64, usize); 9] = [
     ("one", -1, 2),
@@ -41,22 +53,6 @@ fn solve_generic<T: Write>(input: impl AsRef<Vec<i64>>, map: impl Fn(i64) -> Opt
     }
 
     sum
-}
-
-fn part1<T: Write>(input: &Vec<i64>, out: &mut impl UIOutput<T>) -> u64 {
-    solve_generic(input, |c| {
-        if c >= 0 {
-            Some(c as u64)
-        } else {
-            None
-        }
-    }, out)
-}
-
-fn part2<T: Write>(input: Vec<i64>, out: &mut impl UIOutput<T>) -> u64 {
-    solve_generic(&input, |c| {
-        Some(c.unsigned_abs())
-    }, out)
 }
 
 fn parse<T: Write>(mut input: &str, _i: &mut impl UIOutput<T>) -> Result<Vec<i64>, !> {

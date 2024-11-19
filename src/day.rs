@@ -1,4 +1,8 @@
+use std::error::Error;
+use std::fmt::Display;
 use std::io::Write;
+
+use crate::ui::UIOutput;
 
 mod day01;
 mod day02;
@@ -45,106 +49,86 @@ impl<T: Write> Clone for Day<T> {
     };
 }
 
+pub fn parse_and_execute<
+    Parse: FnOnce(&str, &mut UI) -> Result<ParseArtifact, ParseError>,
+    Part1: FnOnce(&mut ParseArtifact, &mut UI) -> Result1,
+    Part2: FnOnce(ParseArtifact, &mut UI) -> Result2,
+    ParseArtifact,
+    ParseError: Error,
+    Result1: Display,
+    Result2: Display,
+    UI: UIOutput<T>,
+    T: Write>(
+    parse: Parse, part1: Part1, part2: Part2, input: &str, output: &mut UI,
+) -> String {
+    let parsed = parse(input, output);
+    match parsed {
+        Ok(mut parsed) => {
+            output.info(format_args!("Parsed input successfully\n"));
+            let part1 = part1(&mut parsed, output);
+            output.info(format_args!("Completed part 1 calculation: {}\n", &part1));
+            let part2 = part2(parsed, output);
+            format!("Part1: {}, Part2: {}", part1, part2)
+        }
+        Err(failed) => {
+            output.critical(format_args!("Parsing failed for {}: {}", input, failed));
+            "".to_string()
+        }
+    }
+}
 
-#[macro_export] macro_rules! memoized_day {
-    ($parse:ident) => {
-        fn unimplemented_part_1<T>(_input: &T) -> (&'static str, ()) {
-            ("UNIMPLEMENTED", ())
-        }
-
-        fn unimplemented_part_2<T>(_input: &T, _memo: ()) -> &'static str {
-            "UNIMPLEMENTED"
-        }
-        memoized_day!($parse, unimplemented_part_1, unimplemented_part_2);
-    };
-    ($parse:ident, $part1:ident) => {
-        fn unimplemented_part<T, Memo>(_input: &T, _memo: Memo) -> &'static str {
-            "UNIMPLEMENTED"
-        }
-        memoized_day!($parse, $part1, unimplemented_part);
-    };
-    ($parse:ident, $part1:ident, $part2:ident) => {
-         simple_day! { |input, out| {
-             match parse(input) {
-                 Ok(parsed) => {
-                     out.info(format_args!("Parsed input successfully\n"));
-                     let (part1, memo) = $part1(&parsed);
-                     out.info(format_args!("Completed part 1 calculation: {} (memo {:?})\n", &part1, &memo));
-                     let part2 = $part2(parsed, memo);
-                     format!("Part1: {}, Part2: {}", part1, part2)
-                 },
-                 Err(failed) => {
-                     out.critical(format_args!("Parsing failed for {}: {}", input, failed));
-                     "".to_string()
-                 }
-             }
-         }}
-    };
- }
+pub fn unimplemented_part<T>(_input: &mut T) -> &'static str {
+    "UNIMPLEMENTED"
+}
 
 #[macro_export] macro_rules! parsed_day {
     ($parse:ident) => {
-        fn unimplemented_part<T>(_input: &T) -> &'static str {
-            "UNIMPLEMENTED"
-        }
+        use crate::day::unimplemented_part;
         parsed_day!($parse, unimplemented_part, unimplemented_part);
     };
     ($parse:ident, $part1:ident) => {
-        fn unimplemented_part<T>(_input: &T) -> &'static str {
-            "UNIMPLEMENTED"
-        }
+        use crate::day::unimplemented_part;
         parsed_day!($parse, $part1, unimplemented_part);
     };
-    ($parse:ident, $part1:ident, $part2:ident) => {
-        simple_day! { |input, out| {
-            let parsed = parse(input, &mut out);
-            match parsed {
-                Ok(parsed) => {
-                    out.info(format_args!("Parsed input successfully\n"));
-                    let part1 = $part1(&parsed, &mut out);
-                    out.info(format_args!("Completed part 1 calculation: {}\n", &part1));
-                    let part2 = $part2(parsed, &mut out);
-                    format!("Part1: {}, Part2: {}", part1, part2)
-                },
-                Err(failed) => {
-                    out.critical(format_args!("Parsing failed for {}: {}", input, failed));
-                    "".to_string()
-                }
-            }
-        }}
+    ($parse:expr, $part1:expr, $part2:expr) => {
+        use crate::day::parse_and_execute;
+        simple_day!(|i, o|parse_and_execute($parse, $part1, $part2, i, &mut o));
     };
  }
 
 #[macro_export] macro_rules! simple_day {
+    ($name:ident) => {
+        simple_day!(|input, output| {
+            $name(input, output)
+        })
+    };
     (| $n:ident | $body:expr) => {
         simple_day! { |$n, _out| $body }
     };
-     (| $n:ident, $out:ident | $body:expr ) => {
-         use crate::ui::{UIOutput, FullUI, OptimizedUI};
-         use crate::day::Day;
-         use std::io::Write;
+    (| $n:ident, $out:ident | $body:expr ) => {
+        use crate::ui::{UIOutput, FullUI, OptimizedUI};
+        use crate::day::Day;
+        use std::io::Write;
 
-         fn do_solve<Out: UIOutput<T>, T : Write>($n: &str, mut $out: Out){
-             $out.info(format_args!("Started {}\n", module_path!()));
-             let result = $body;
-             $out.result(format_args!("{}: {result}\n", module_path!()));
-         }
-         fn solve_terse<T: Write>(input: &str, writer: &mut T) {
-             let opt = OptimizedUI(writer);
-             do_solve(input, opt)
-         }
-         fn solve_verbose<T: Write>(input: &str, writer: &mut T) {
-             let full = FullUI(writer);
-             do_solve(input, full)
-         }
+        fn do_solve<Out: UIOutput<T>, T : Write>($n: &str, mut $out: Out){
+            $out.info(format_args!("Started {}\n", module_path!()));
+            let result = $body;
+            $out.result(format_args!("{}: {result}\n", module_path!()));
+        }
+        fn solve_terse<T: Write>(input: &str, writer: &mut T) {
+            let opt = OptimizedUI(writer);
+            do_solve(input, opt)
+        }
 
-         pub const fn register<T: Write>() -> Option<Day<T>> {
-             Some(Day {
-                 terse: solve_terse::<T>,
-                 verbose: solve_verbose::<T>
-             })
-         }
-     };
+        fn solve_verbose<T: Write>(input: &str, writer: &mut T) {
+            let full = FullUI(writer);
+            do_solve(input, full)
+        }
+
+        pub const fn register<T: Write>() -> Option<Day<T>> {
+            Some(Day {terse: solve_terse::<T>, verbose: solve_verbose::<T> })
+        }
+    };
  }
 
 pub const fn handlers<T: Write>() -> [Option<Day<T>>; 25] {
