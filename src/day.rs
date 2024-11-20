@@ -88,7 +88,7 @@ impl Display for SimpleError {
 }
 impl Error for SimpleError{}
 
-fn nom_parsed<T: Write, UI: UIOutput<T>, ParseResult, NomFunc: FnOnce(&str) -> IResult<&str, ParseResult>>(
+const fn nom_parsed<T: Write, UI: UIOutput<T>, ParseResult, NomFunc: FnOnce(&str) -> IResult<&str, ParseResult>>(
     nom_handler: NomFunc
 ) -> impl FnOnce(&str, &mut UI) -> Result<ParseResult, SimpleError> {
     |input, output| {
@@ -109,11 +109,11 @@ fn nom_parsed<T: Write, UI: UIOutput<T>, ParseResult, NomFunc: FnOnce(&str) -> I
 
 
 #[macro_export] macro_rules! parsed_day {
-    ($parse:ident) => {
+    ($parse:expr) => {
         fn unimplemented_part<T>(_input: &mut T) -> &'static str { "UNIMPLEMENTED" }
         parsed_day!($parse, unimplemented_part, unimplemented_part);
     };
-    ($parse:ident, $part1:ident) => {
+    ($parse:expr, $part1:expr) => {
         fn unimplemented_part<T>(_input: &mut T) -> &'static str { "UNIMPLEMENTED" }
         parsed_day!($parse, $part1, unimplemented_part);
     };

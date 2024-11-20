@@ -1,9 +1,6 @@
 use std::io::Write;
-use std::iter::FilterMap;
-use std::slice::Iter;
 use std::sync::mpsc::{channel, sync_channel};
 use lazy_static::lazy_static;
-use nom::Parser;
 use threadpool::ThreadPool;
 use crate::ui::UIOutput;
 lazy_static! {
