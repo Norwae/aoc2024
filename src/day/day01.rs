@@ -1,10 +1,10 @@
 use crate::*;
 
 
-parsed_day!(parse, |input, output|{
-    solve_generic(input, output, |c|c)
-}, |input, output|{
-    solve_generic(input, output, i64::abs)
+parsed_day!(|input,_|parse(input), |input, _|{
+    solve_generic(input, |c|c)
+}, |input, _|{
+    solve_generic(input.as_slice(), i64::abs)
 });
 
 const STRING_VALUE_PAIRS: [(&'static str, i64, usize); 9] = [
@@ -20,7 +20,7 @@ const STRING_VALUE_PAIRS: [(&'static str, i64, usize); 9] = [
 ];
 
 
-fn solve_generic<T: Write>(input: impl AsRef<Vec<i64>>, out: &mut impl UIOutput<T>, process: impl Fn(i64) -> i64) -> i64 {
+fn solve_generic(input: &[i64], process: impl Fn(i64) -> i64) -> i64 {
     let mut sum = 0;
     let mut first = i64::MAX;
     let mut last = 0;
@@ -33,8 +33,6 @@ fn solve_generic<T: Write>(input: impl AsRef<Vec<i64>>, out: &mut impl UIOutput<
                 let two_digit_nr = first * 10 + last;
                 sum += two_digit_nr;
                 first = i64::MAX
-            } else {
-                out.critical(format_args!("Skipped an empty line, input is borked\n"))
             }
         } else {
             let content = process(content);
@@ -50,7 +48,7 @@ fn solve_generic<T: Write>(input: impl AsRef<Vec<i64>>, out: &mut impl UIOutput<
     sum
 }
 
-fn parse<T: Write>(mut input: &str, _i: &mut impl UIOutput<T>) -> Result<Vec<i64>, !> {
+fn parse(mut input: &str) -> Result<Vec<i64>, !> {
     let mut result = Vec::new();
 
     'outer: while !input.is_empty() {

@@ -62,7 +62,7 @@ pub fn optimized_run(config: Configuration) -> ExitCode {
     let mut total_duration = Duration::ZERO;
     let mut overall_output = String::new();
     let mut day_eval_timings = String::new();
-    let results = parallelize(tasks, false);
+    let results = parallelize(tasks);
     for OptimizedOutput {day, timing, output_buffer} in results {
         total_duration += timing;
         overall_output += &String::from_utf8(output_buffer).expect("Valid utf8");
@@ -83,3 +83,4 @@ Day evaluation times:
 
     ExitCode::SUCCESS
 }
+

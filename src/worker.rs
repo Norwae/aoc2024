@@ -1,6 +1,9 @@
 use std::io::Write;
+use std::iter::FilterMap;
+use std::slice::Iter;
 use std::sync::mpsc::{channel, sync_channel};
 use lazy_static::lazy_static;
+use nom::Parser;
 use threadpool::ThreadPool;
 use crate::ui::UIOutput;
 lazy_static! {
@@ -11,31 +14,44 @@ pub fn run_on_worker(function: impl FnOnce() + Send + 'static) {
     (*THREADPOOL).execute(function)
 }
 
-pub fn parallelize<F, R, I>(tasks: I, ordered: bool) -> Vec<R>
+pub fn parallelize_ordered<F, R, I>(tasks: I) -> Vec<R>
+where
+    R: Send + 'static,
+    F: FnOnce() -> R + Send + 'static,
+    I: IntoIterator<Item=F>,
+{
+    let it = tasks.into_iter().enumerate().map(|(n, f0)|{
+        move ||{
+            let result = f0();
+            (n, result)
+        }
+    });
+    let mut tagged_results = parallelize(it);
+    tagged_results.sort_by_key(|(f, _)|*f);
+    tagged_results.into_iter().map(|(_, s)|s).collect()
+}
+
+pub fn parallelize<F, R, I>(tasks: I) -> Vec<R>
 where
     R: Send + 'static,
     F: FnOnce() -> R + Send + 'static,
     I: IntoIterator<Item=F>,
 {
     let (send, recv) = channel();
-    for (n, f) in tasks.into_iter().enumerate() {
+    for f in tasks.into_iter(){
         let send = send.clone();
         run_on_worker(move || {
             let result = f();
-            let tagged_result = (n, result);
-            send.send(tagged_result).unwrap();
+            send.send(result).unwrap();
         });
     }
     drop(send);
 
     let mut tagged_answers = Vec::new();
-    while let Ok(tpl) = recv.recv(){
+    while let Ok(tpl) = recv.recv() {
         tagged_answers.push(tpl)
     }
-    if ordered {
-        tagged_answers.sort_by_key(|(fst, _)| *fst);
-    }
-    tagged_answers.into_iter().map(|(_, snd)| snd).collect()
+    tagged_answers
 }
 
 pub fn race<F, R, I, O, W>(out: &mut O, candidates: I) -> R
