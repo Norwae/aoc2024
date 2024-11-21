@@ -15,7 +15,7 @@ use crate::ui::{UIMode};
 #[command(version, about, long_about = None)]
 struct Configuration {
     /// Frontend to load
-    #[arg(long, default_value = "gtk", value_enum)]
+    #[arg(long, default_value = "console", value_enum)]
     ui_mode: UIMode,
     #[arg(long)]
     verbose: bool,
