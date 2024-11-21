@@ -60,6 +60,7 @@ impl Configuration {
 }
 
 fn main() -> ExitCode {
+    worker::warm_up();
     let cfg = Configuration::parse();
     cfg.run()
 }

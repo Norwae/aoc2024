@@ -17,7 +17,6 @@ pub enum UIMode {
 }
 
 impl UIMode {
-
     pub fn run(self, config: Configuration) -> ExitCode {
         match self {
             #[cfg(feature = "gtk_ui")]

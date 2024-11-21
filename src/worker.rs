@@ -51,10 +51,8 @@ where
     tagged_answers
 }
 
-pub fn race<F, R, I, O, W>(out: &mut O, candidates: I) -> R
+pub fn race<F, R, I>(candidates: I) -> R
 where
-    W: Write,
-    O: UIOutput<W>,
     F: FnOnce() -> R + Send + 'static,
     R: Send + 'static,
     I: IntoIterator<Item=F>,
@@ -65,7 +63,6 @@ where
     let (send, receive) = sync_channel(1);
     for candidate in candidates {
         if n > available_threads {
-            out.critical(format_args!("Would attempt to race more than {} solutions, which would force scheduling (=not even participating in the race). Discarding tail", available_threads));
             break;
         }
 
@@ -78,6 +75,15 @@ where
     }
 
     receive.recv().expect("Received an answer")
+}
+
+
+pub fn warm_up() {
+    race((0..1000).map(|n| {
+        move ||{
+            n
+        }
+    }).collect::<Vec<_>>());
 }
 
 #[cfg(test)]

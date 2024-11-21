@@ -51,16 +51,18 @@ impl<T: Write> Clone for Day<T> {
 }
 
 pub fn parse_and_execute<
+    'input,
+    'output,
     Parse: FnOnce(&str, &mut UI) -> Result<ParseArtifact, ParseError>,
     Part1: FnOnce(&mut ParseArtifact, &mut UI) -> Result1,
     Part2: FnOnce(ParseArtifact, &mut UI) -> Result2,
-    ParseArtifact,
+    ParseArtifact: 'input,
     ParseError: Error,
     Result1: Display,
     Result2: Display,
     UI: UIOutput<T>,
     T: Write>(
-    parse: Parse, part1: Part1, part2: Part2, input: &str, output: &mut UI,
+    parse: Parse, part1: Part1, part2: Part2, input: &'input str, output: &'output mut UI,
 ) -> String {
     let parsed = parse(input, output);
     match parsed {
@@ -110,12 +112,12 @@ const fn nom_parsed<T: Write, UI: UIOutput<T>, ParseResult, NomFunc: FnOnce(&str
 
 #[macro_export] macro_rules! parsed_day {
     ($parse:expr) => {
-        fn unimplemented_part<T>(_input: &mut T) -> &'static str { "UNIMPLEMENTED" }
-        parsed_day!($parse, unimplemented_part, unimplemented_part);
+        fn unimplemented_part_1<T, W: Write, UI: UIOutput<W>>(_input: &mut T, _: &mut UI) -> &'static str { "UNIMPLEMENTED" }
+        parsed_day!($parse, unimplemented_part_1);
     };
     ($parse:expr, $part1:expr) => {
-        fn unimplemented_part<T>(_input: &mut T) -> &'static str { "UNIMPLEMENTED" }
-        parsed_day!($parse, $part1, unimplemented_part);
+        fn unimplemented_part_2<T, W: Write, UI: UIOutput<W>>(_input: T, _: &mut UI)-> &'static str { "UNIMPLEMENTED" }
+        parsed_day!($parse, $part1, unimplemented_part_2);
     };
     ($parse:expr, $part1:expr, $part2:expr) => {
         use crate::day::parse_and_execute;
