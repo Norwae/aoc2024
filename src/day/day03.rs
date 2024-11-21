@@ -1,4 +1,3 @@
-use nom::ParseTo;
 use crate::*;
 
 simple_day!(|str|{

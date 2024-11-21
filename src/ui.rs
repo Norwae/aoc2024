@@ -5,7 +5,7 @@ mod console;
 use std::fmt::{Arguments};
 use std::io::Write;
 use std::process::ExitCode;
-use clap::ValueEnum;
+use clap::{ValueEnum};
 use crate::Configuration;
 
 #[derive(Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq, ValueEnum)]
@@ -27,48 +27,89 @@ impl UIMode {
     }
 }
 
-pub trait UIOutput<T>  {
+pub trait UIWrite : Write {
+    fn create<T: Write>(out: &mut T, prefix: &'static str) -> impl UIWrite;
     fn info(&mut self, fmt: Arguments<'_>);
     fn critical(&mut self, fmt: Arguments<'_>);
     fn result(&mut self, fmt: Arguments<'_>);
 }
 
-pub struct FullUI<T>(pub T);
-
-pub struct OptimizedUI<T>(pub T);
-
-fn write_wrapped<T: Write>(writer: &mut T, tag: &str, args: Arguments<'_>) -> Result<(), std::io::Error> {
-    writer.write(tag.as_bytes())?;
-    writer.write_fmt(args)?;
-    writer.flush()
+pub struct Verbose<T> {
+    out: T,
+    prefix: &'static str
 }
 
-fn write_tagged<T: Write>(writer: &mut T, tag: &str, args: Arguments<'_>) {
-    if let Err(err) = write_wrapped(writer, tag, args) {
-        eprintln!("Output error: {err}")
+impl <T: Write> Write for Verbose<T> {
+    fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
+        self.out.write(buf)
+    }
+
+    fn flush(&mut self) -> std::io::Result<()> {
+        self.out.flush()
     }
 }
 
-impl<T: Write> UIOutput<T> for FullUI<T> {
+impl <T: Write> UIWrite for Verbose<T> {
+    fn create<T2: Write>(out: &mut T2, prefix: &'static str) -> impl UIWrite {
+        Verbose { out, prefix }
+    }
     fn info(&mut self, fmt: Arguments<'_>) {
-        write_tagged(&mut self.0, "INFO: ", fmt)
+        _ = self.write(self.prefix.as_bytes());
+        _ = self.write(b" INFO: ");
+        _ = self.write_fmt(fmt);
+        _ = self.write(b"\n");
     }
 
     fn critical(&mut self, fmt: Arguments<'_>) {
-        write_tagged(&mut self.0, "CRITICAL: ", fmt)
+        _ = self.write(self.prefix.as_bytes());
+        _ = self.write("CRITICAL: ".as_bytes());
+        _ = self.write_fmt(fmt);
+        _ = self.write(b"\n");
     }
 
     fn result(&mut self, fmt: Arguments<'_>) {
-        write_tagged(&mut self.0, "RESULT:", fmt)
+        _ = self.write(self.prefix.as_bytes());
+        _ = self.write("RESULT: ".as_bytes());
+        _ = self.write_fmt(fmt);
+        _ = self.write(b"\n");
     }
 }
 
-impl<T: Write> UIOutput<T> for OptimizedUI<T> {
-    fn info(&mut self, _fmt: Arguments<'_>) {}
+pub struct Terse<T> {
+    out: T,
+    prefix: &'static str,
+    had_output: bool
+}
+impl <T: Write> Write for Terse<T> {
+    fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
+        if self.had_output {
+            Ok(buf.len())
+        } else {
+            self.out.write(buf)
+        }
+    }
 
-    fn critical(&mut self, _fmt: Arguments<'_>) {}
+    fn flush(&mut self) -> std::io::Result<()> {
+        self.had_output = true;
+        self.out.flush()
+    }
+}
+
+impl <T: Write> UIWrite for Terse<T> {
+    fn create<T2: Write>(out: &mut T2, prefix: &'static str) -> impl UIWrite {
+        Terse { out, prefix, had_output: false }
+    }
+    fn info(&mut self, _fmt: Arguments<'_>) {
+    }
+
+    fn critical(&mut self, _fmt: Arguments<'_>) {
+    }
 
     fn result(&mut self, fmt: Arguments<'_>) {
-        write_tagged(&mut self.0, "", fmt)
+        _ = self.write(self.prefix.as_bytes());
+        _ = self.write(b" ");
+        _ = self.write_fmt(fmt);
+        _ = self.write(b"\n");
+        _ = self.flush()
     }
 }

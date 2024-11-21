@@ -1,5 +1,5 @@
 use nom::character::complete::{digit1, line_ending, space1};
-use nom::combinator::{map_opt, map_res};
+use nom::combinator::map_opt;
 use nom::IResult;
 use nom::multi::separated_list1;
 use crate::*;

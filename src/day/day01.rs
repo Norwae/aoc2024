@@ -1,18 +1,17 @@
-use std::fmt::format;
 use crate::*;
 
-simple_day!(|str|{
-    let str = str.trim().as_bytes();
-    let half_len = str.len() / 2;
-    let mut sum_1 = (if str[0] == str[str.len() - 1] {str[0] - b'0'} else {0}) as u64;
-    let mut sum_2 = (if str[0] == str[half_len] {str[0] - b'0'} else {0}) as u64;
-    for i in 1..str.len() {
-        let add = (str[i] - b'0') as u64;
-        if str[i - 1] == str[i] {
+simple_day!(|string, _out|{
+    let string = string.trim().as_bytes();
+    let half_len = string.len() / 2;
+    let mut sum_1 = (if string[0] == string[string.len() - 1] {string[0] - b'0'} else {0}) as u64;
+    let mut sum_2 = (if string[0] == string[half_len] {string[0] - b'0'} else {0}) as u64;
+    for i in 1..string.len() {
+        let add = (string[i] - b'0') as u64;
+        if string[i - 1] == string[i] {
             sum_1 += add
         }
 
-        if str[(i + half_len) % str.len()] == str[i] {
+        if string[(i + half_len) % string.len()] == string[i] {
             sum_2 += add
         }
     }

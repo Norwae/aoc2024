@@ -1,8 +1,7 @@
-use std::io::Write;
 use std::sync::mpsc::{channel, sync_channel};
 use lazy_static::lazy_static;
 use threadpool::ThreadPool;
-use crate::ui::UIOutput;
+
 lazy_static! {
     static ref THREADPOOL: ThreadPool = threadpool::Builder::new().build();
 }
