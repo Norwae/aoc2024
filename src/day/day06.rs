@@ -28,26 +28,36 @@ fn find_repeat(previous: &Vec2D<u8>, next: &Vec<u8>) -> Option<usize> {
     None
 }
 
-fn redistribute(buffer: &mut [u8]) {
-    let (max_index, to_distribute) = buffer.iter().enumerate().rev().max_by_key(|(_, content)| **content).unwrap();
-    let to_distribute = *to_distribute;
-    buffer[max_index] = 0;
+fn redistribute(buffer: &mut [u8], from: usize) -> usize {
+    let to_distribute = buffer[from];
+    buffer[from] = 0;
     let n = buffer.len();
     let base = to_distribute / n as u8;
     let mut bonus = to_distribute as i32 % n as i32;
+    let mut next_max = 0;
+    let mut next_max_index = from;
     for i in 0..n {
-        buffer[(max_index + 1 + i) % n] += base + if bonus > 0 { 1 } else { 0 };
+        let idx = (from + 1 + i) % n;
+        buffer[idx] += base + if bonus > 0 { 1 } else { 0 };
         bonus -= 1;
+
+        if buffer[idx] > next_max || buffer[idx] == next_max && idx < next_max_index {
+            next_max = buffer[idx];
+            next_max_index = idx;
+        }
     }
+
+    next_max_index
 }
 
 fn part1<T>(input: &mut Day6Data, _: &mut T) -> String {
     let input = &mut input.evolution;
     let mut buffer = input.pop_row();
     let mut repeat = find_repeat(input, &buffer);
+    let mut redistribute_index = buffer.iter().enumerate().rev().max_by_key(|(_, value)|**value).unwrap().0;
     while repeat.is_none() {
         input.extend_with_row(&buffer);
-        redistribute(&mut buffer);
+        redistribute_index = redistribute(&mut buffer, redistribute_index);
         repeat = find_repeat(input, &buffer)
     }
 
