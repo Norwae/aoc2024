@@ -41,7 +41,7 @@ fn redistribute(buffer: &mut [u8], from: usize) -> usize {
         buffer[idx] += base + if bonus > 0 { 1 } else { 0 };
         bonus -= 1;
 
-        if buffer[idx] > next_max || buffer[idx] == next_max && idx < next_max_index {
+        if buffer[idx] > next_max || (buffer[idx] == next_max && idx < next_max_index) {
             next_max = buffer[idx];
             next_max_index = idx;
         }
