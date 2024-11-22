@@ -58,7 +58,6 @@ where
 {
     let available_threads = THREADPOOL.max_count() - 1;
     let mut n = 0;
-    let candidates = candidates.into_iter();
     let (send, receive) = sync_channel(1);
     for candidate in candidates {
         if n > available_threads {
@@ -87,16 +86,31 @@ pub fn warm_up() {
 
 #[cfg(test)]
 mod test {
-    use std::fmt::Arguments;
+    use std::fmt::{Arguments};
+    use std::io::Write;
     use std::thread::sleep;
     use std::time::Duration;
+    use gtk4::ResponseType::No;
     use rand::{RngCore, thread_rng};
-    use crate::ui::UIOutput;
+    use crate::ui::UIWrite;
     use crate::worker::{parallelize, race};
 
     struct NoUI;
 
-    impl UIOutput<Vec<u8>> for NoUI {
+    impl Write for NoUI {
+        fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
+            Ok(buf.len())
+        }
+
+        fn flush(&mut self) -> std::io::Result<()> {
+            Ok(())
+        }
+    }
+    impl UIWrite for NoUI {
+        fn create<T: Write>(out: &mut T, prefix: &'static str) -> impl UIWrite {
+            NoUI
+        }
+
         fn info(&mut self, _fmt: Arguments<'_>) {}
 
         fn critical(&mut self, _fmt: Arguments<'_>) {}
@@ -112,7 +126,7 @@ mod test {
         }, || {
             1
         }];
-        assert_eq!(1, race(&mut NoUI, solvers))
+        assert_eq!(1, race(solvers))
     }
 
     #[test]
@@ -124,7 +138,7 @@ mod test {
                 n
             }
         }).collect::<Vec<_>>();
-        let fastest = race(&mut NoUI, tasks);
+        let fastest = race(tasks);
         assert!(fastest > 50)
     }
 
@@ -137,7 +151,7 @@ mod test {
                 n
             }
         }).collect::<Vec<_>>();
-        let result = parallelize(tasks, true);
+        let result = parallelize(tasks);
         assert_eq!(Vec::from_iter(0..50usize), result)
     }
 }
