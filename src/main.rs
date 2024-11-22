@@ -3,6 +3,7 @@
 mod ui;
 mod day;
 mod worker;
+mod vec2d;
 
 use std::fs::read;
 use clap::Parser;
@@ -24,7 +25,7 @@ struct Configuration {
     input_path: PathBuf,
     /// days to run (don't specify to run all available)
     #[arg(value_parser = clap::value_parser ! (u8).range(1..=25))]
-    run_days: Vec<usize>,
+    run_days: Vec<u8>,
 }
 
 impl Configuration {
@@ -32,9 +33,8 @@ impl Configuration {
         self.ui_mode.run(self)
     }
 
-    fn active_days(&self) -> &[usize]{
-        #[link_section=".rodata"]
-        static ALL_ACTIVE: [usize; 25] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25];
+    fn active_days(&self) -> &[u8]{
+        static ALL_ACTIVE: [u8; 25] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25];
 
         if self.run_days.is_empty() {
             &ALL_ACTIVE
@@ -43,7 +43,7 @@ impl Configuration {
         }
     }
 
-    fn load_input(&self, day: usize) -> String {
+    fn load_input(&self, day: u8) -> String {
         let mut path = self.input_path.clone();
         path.push(format!("{:02}", day));
 

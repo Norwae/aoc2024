@@ -8,8 +8,8 @@ use crate::worker::parallelize;
 
 pub fn console_run(config: Configuration) -> ExitCode {
     static HANDLERS: [Option<Day<Stdout>>; 25] = handlers::<Stdout>();
-    for day in &config.run_days {
-        let index = *day - 1;
+    for day in config.active_days() {
+        let index = (*day - 1) as usize;
         if let Some(solution) = &HANDLERS[index] {
             let handler = if config.verbose {
                 solution.verbose
@@ -23,7 +23,7 @@ pub fn console_run(config: Configuration) -> ExitCode {
     ExitCode::SUCCESS
 }
 
-fn execute_day_handler(day: usize, function: fn(&str, &mut Vec<u8>), input: String) -> OptimizedOutput {
+fn execute_day_handler(day: u8, function: fn(&str, &mut Vec<u8>), input: String) -> OptimizedOutput {
     let mut output_buffer = Vec::new();
     let start = Instant::now();
     function(&input, &mut output_buffer);
@@ -36,7 +36,7 @@ fn execute_day_handler(day: usize, function: fn(&str, &mut Vec<u8>), input: Stri
 }
 
 struct OptimizedOutput {
-    day: usize,
+    day: u8,
     output_buffer: Vec<u8>,
     timing: Duration,
 }
@@ -46,14 +46,14 @@ pub fn optimized_run(config: Configuration) -> ExitCode {
     let clock_start = Instant::now();
     let tasks = config.active_days().into_iter().filter_map(|day| {
         let day = *day;
-        let index = day - 1;
+        let index = (day - 1) as usize;
         if let Some(handler) = &HANDLERS[index] {
             let handler = if config.verbose {
                 handler.verbose
             } else {
                 handler.terse
             };
-            let input = config.load_input(index + 1);
+            let input = config.load_input(day);
             Some(move || execute_day_handler(day, handler, input))
         } else {
             None

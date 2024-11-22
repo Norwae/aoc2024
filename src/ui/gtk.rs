@@ -16,8 +16,8 @@ use crate::worker::run_on_worker;
 
 static HANDLERS: [Option<Day<WrapSender>>; 25] = handlers();
 
-fn build_day_selector_widget(idx: usize, preselect: bool) -> CheckButton {
-    let handler = &HANDLERS[idx];
+fn build_day_selector_widget(idx: u8, preselect: bool) -> CheckButton {
+    let handler = &HANDLERS[idx as usize];
     CheckButton::builder()
         .label(format!("Day {}", idx + 1))
         .active(preselect && handler.is_some())
@@ -54,7 +54,7 @@ fn build_input_stack_pages(input_source: &Configuration) -> (LayoutBox, StackSid
 
     for d in HANDLERS.iter().enumerate() {
         if let (idx, Some(_)) = d {
-            let input_editor = build_input_editor(&input_source.load_input(idx + 1));
+            let input_editor = build_input_editor(&input_source.load_input((idx + 1) as u8));
             let name = format!("day_{}", idx);
             let label = format!("Day {}", idx + 1);
             stack.add_titled(&input_editor, Some(&name), &label);
@@ -68,12 +68,12 @@ fn build_input_stack_pages(input_source: &Configuration) -> (LayoutBox, StackSid
     (layout, selector)
 }
 
-fn build_day_selector_grid(preselect: &[usize]) -> Grid {
+fn build_day_selector_grid(preselect: &[u8]) -> Grid {
     let grid = Grid::builder()
         .column_homogeneous(true)
         .column_spacing(2)
         .build();
-    for idx in 0usize..=24 {
+    for idx in 0u8..=24 {
         let selector_widget = build_day_selector_widget(idx, preselect.contains(&(idx + 1)));
         grid.attach(&selector_widget, (idx as i32) % 5, (idx as i32) / 5, 1, 1)
     }

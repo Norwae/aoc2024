@@ -58,20 +58,23 @@ impl <T: Write> UIWrite for Verbose<T> {
         _ = self.write(b" INFO: ");
         _ = self.write_fmt(fmt);
         _ = self.write(b"\n");
+        _ = self.flush();
     }
 
     fn critical(&mut self, fmt: Arguments<'_>) {
         _ = self.write(self.prefix.as_bytes());
-        _ = self.write("CRITICAL: ".as_bytes());
+        _ = self.write(" CRITICAL: ".as_bytes());
         _ = self.write_fmt(fmt);
         _ = self.write(b"\n");
+        _ = self.flush();
     }
 
     fn result(&mut self, fmt: Arguments<'_>) {
         _ = self.write(self.prefix.as_bytes());
-        _ = self.write("RESULT: ".as_bytes());
+        _ = self.write(" RESULT: ".as_bytes());
         _ = self.write_fmt(fmt);
         _ = self.write(b"\n");
+        _ = self.flush();
     }
 }
 
