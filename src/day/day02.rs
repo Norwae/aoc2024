@@ -18,11 +18,11 @@ fn part2_line(line: Vec<u32>) -> u32{
     unreachable!()
 }
 
-fn part2<T>(input: Vec<Vec<u32>>, _: &mut T) -> u32 {
+fn part2(input: Vec<Vec<u32>>) -> u32 {
     input.into_iter().map(part2_line).sum()
 }
 
-fn part1<T>(input: &mut Vec<Vec<u32>>, _: &mut T) -> u32 {
+fn part1(input: &mut Vec<Vec<u32>>) -> u32 {
     input.into_iter().map(|line|{
         let min = *line.into_iter().min().unwrap();
         let max = *line.into_iter().max().unwrap();

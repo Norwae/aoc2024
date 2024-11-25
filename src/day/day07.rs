@@ -7,23 +7,10 @@ use nom::IResult;
 use nom::multi::separated_list1;
 use nom::sequence::{preceded, tuple};
 use crate::*;
-use crate::day::nom_parsed;
+use crate::day::{nom_parsed, parse_and_execute};
 
-simple_day!(solve);
+parsed_day!(nom_parsed(parse), part1, part2);
 
-fn solve<T: UIWrite>(input: &str, out: &mut T) -> String {
-    let start_parse = Instant::now();
-    let (_, mut parsed) = parse(input).unwrap();
-    let start_part_1 = Instant::now();
-    out.info(format_args!("Parse: {:?}", start_part_1 - start_parse));
-    part1(&mut parsed);
-    let root = parsed.root.unwrap();
-    let start_part_2 = Instant::now();
-    let required_weight = part2(&root);
-    out.info(format_args!("Part 1 -> {}; Part 2 -> {}: {:?}", root.name, required_weight, start_part_2 - start_part_1));
-    out.info(format_args!("Done: {:?}", start_part_2 - start_parse));
-    format!("{} {}", root.name, required_weight)
-}
 
 fn find_mismatch_in<'input, 'nodes>(nodes: &'nodes Vec<Day7Node<'input>>, mut path_accu: Vec<&'nodes Day7Node<'input>>) -> Vec<&'nodes Day7Node<'input>> {
     let mismatched_node = nodes.as_slice().windows(3).find_map(|w| {
@@ -52,8 +39,9 @@ fn find_mismatch_in<'input, 'nodes>(nodes: &'nodes Vec<Day7Node<'input>>, mut pa
     path_accu
 }
 
-fn part2(root: &Day7Node) -> usize {
-    let mismatch_node_path = find_mismatch_in(&root.children, vec![root]);
+fn part2(root: Day7) -> usize {
+    let root = root.root.unwrap();
+    let mismatch_node_path = find_mismatch_in(&root.children, vec![&root]);
     let wrong_weight_node = mismatch_node_path[mismatch_node_path.len() - 1];
     let child_sum = wrong_weight_node.children.iter().map(|c|c.cumulative_weight).sum::<usize>();
     let wrong_weight_sibling = mismatch_node_path[mismatch_node_path.len() - 2].children.iter().find(|it|it.name != wrong_weight_node.name).unwrap();
@@ -62,7 +50,7 @@ fn part2(root: &Day7Node) -> usize {
     required_self_weight
 }
 
-fn part1(input: &mut Day7) {
+fn part1<'day, 'input>(input: &'day mut Day7<'input>) -> &'input str {
     let mut unresolved = HashMap::new();
     let mut next_spec = input.node_specs.iter().map(|(name, _)| *name).next();
     while let Some(name) = next_spec {
@@ -75,6 +63,7 @@ fn part1(input: &mut Day7) {
     let mut iter = unresolved.into_iter();
     input.root = iter.next().map(|(_, d)| d);
     assert!(iter.next().is_none());
+    input.root.as_ref().unwrap().name
 }
 
 #[derive(Debug)]

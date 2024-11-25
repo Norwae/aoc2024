@@ -52,28 +52,28 @@ impl<T: Write> Clone for Day<T> {
 pub fn parse_and_execute<
     'input,
     'output,
-    Parse: FnOnce(&str, &mut UI) -> Result<ParseArtifact, ParseError>,
-    Part1: FnOnce(&mut ParseArtifact, &mut UI) -> Result1,
-    Part2: FnOnce(ParseArtifact, &mut UI) -> Result2,
+    Parse: FnOnce(&'input str) -> Result<ParseArtifact, ParseError>,
+    Part1: FnOnce(&mut ParseArtifact) -> Result1,
+    Part2: FnOnce(ParseArtifact) -> Result2,
     ParseArtifact: 'input,
-    ParseError: Error,
+    ParseError: Error +'input,
     Result1: Display,
     Result2: Display,
     UI: UIWrite>(
-    parse: Parse, part1: Part1, part2: Part2, input: &'input str, output: &'output mut UI,
+    parse: Parse, part1: Part1, part2: Part2, input: &'input str, output: &'output mut UI
 ) -> String {
-    let parsed = parse(input, output);
+    let parsed = parse(input);
     match parsed {
         Ok(mut parsed) => {
             output.info(format_args!("Parsed input successfully\n"));
-            let part1 = part1(&mut parsed, output);
+            let part1 = part1(&mut parsed);
             output.info(format_args!("Completed part 1 calculation: {}\n", &part1));
-            let part2 = part2(parsed, output);
+            let part2 = part2(parsed);
             format!("Part1: {}, Part2: {}", part1, part2)
         }
         Err(failed) => {
             output.critical(format_args!("Parsing failed for {}: {}", input, failed));
-            "ERROR".to_string()
+            format!("ERROR: {}", failed)
         }
     }
 }
@@ -89,17 +89,16 @@ impl Display for SimpleError {
 
 impl Error for SimpleError {}
 
-const fn nom_parsed<UI: UIWrite, ParseResult, NomFunc: FnOnce(&str) -> IResult<&str, ParseResult>>(
+const fn nom_parsed<'i, ParseResult: 'i, NomFunc: FnOnce(&'i str) -> IResult<&'i str, ParseResult>>(
     nom_handler: NomFunc
-) -> impl FnOnce(&str, &mut UI) -> Result<ParseResult, SimpleError> {
-    |input, output| {
+) -> impl FnOnce(&'i str) -> Result<ParseResult, SimpleError> {
+    |input| {
         match nom_handler(input) {
-            Ok((rest, parsed)) => {
-                let rest = rest.trim();
-                if !rest.is_empty() {
-                    output.critical(format_args!("Relevant unparsed tail: {}\n", rest))
-                }
+            Ok((tail, parsed)) if tail.trim().is_empty() => {
                 Ok(parsed)
+            }
+            Ok((rest, _)) => {
+                Err(SimpleError(format!("Incomplete parse: {}", rest.trim())))
             }
             Err(e) => {
                 Err(SimpleError(format!("{e}")))
@@ -111,10 +110,10 @@ const fn nom_parsed<UI: UIWrite, ParseResult, NomFunc: FnOnce(&str) -> IResult<&
 
 #[macro_export] macro_rules! parsed_day {
     ($parse:expr) => {
-        parsed_day!($parse, |_, _|"UNIMPLEMENTED Part 1");
+        parsed_day!($parse, |_|"UNIMPLEMENTED Part 1");
     };
     ($parse:expr, $part1:expr) => {
-        parsed_day!($parse, $part1, |_, _|"UNIMPLEMENTED Part 2");
+        parsed_day!($parse, $part1, |_|"UNIMPLEMENTED Part 2");
     };
     ($parse:expr, $part1:expr, $part2:expr) => {
         simple_day!(|i, o|crate::day::parse_and_execute($parse, $part1, $part2, i, &mut o));

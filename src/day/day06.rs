@@ -16,7 +16,7 @@ parsed_day!(nom_parsed(|str|{
     ), |input|{
         Day6Data{ evolution: input.into() }
     })(str)
-}), part1, |_,_|"<see before>");
+}), part1, |_|"<see before>");
 
 fn find_repeat(previous: &Vec2D<u8>, next: &Vec<u8>) -> Option<usize> {
     for i in 0..previous.rows() {
@@ -50,7 +50,7 @@ fn redistribute(buffer: &mut [u8], from: usize) -> usize {
     next_max_index
 }
 
-fn part1<T>(input: &mut Day6Data, _: &mut T) -> String {
+fn part1(input: &mut Day6Data) -> String {
     let input = &mut input.evolution;
     let mut buffer = input.pop_row();
     let mut repeat = find_repeat(input, &buffer);
