@@ -7,8 +7,6 @@ simple_day!(|input|{
     let mut in_garbage = false;
     let mut i = 0;
     let mut skipped = 0;
-
-
     let mut sum = 0;
     let mut level = 0;
     while i < input.len() {
