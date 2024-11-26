@@ -48,6 +48,7 @@ impl TwistList {
     fn hash(&self) -> u128 {
         let mut overall_hash = 0u128;
         for chunk_idx in 0..16 {
+            overall_hash <<= 8;
             let offset = chunk_idx * 16;
             let chunk = &self.values[offset..offset + 16];
             let chunk_xor = chunk.into_iter().fold(0u8, |xor, next| {
@@ -55,7 +56,7 @@ impl TwistList {
             });
 
             let widened = chunk_xor as u128;
-            overall_hash |= widened << 8 * (15usize - chunk_idx);
+            overall_hash |= widened;
         }
         overall_hash
     }
@@ -72,7 +73,6 @@ simple_day!(|input|{
     let part1 = list.fingerprint();
     let mut round_offsets = input.bytes().map(|b|b as usize).collect::<Vec<_>>();
     round_offsets.extend_from_slice(&[17, 31, 73, 47, 23]);
-    dbg!(&round_offsets);
     let mut list = TwistList::new();
     for _ in 0..64 {
         for off in round_offsets.iter() {
