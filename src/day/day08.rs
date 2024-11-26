@@ -1,14 +1,14 @@
 use std::collections::HashMap;
-use std::fmt::format;
 use nom::branch::alt;
 use nom::bytes::complete::tag;
-use nom::character::complete::{alpha1, digit1, line_ending, space1};
-use nom::combinator::{map, map_res, opt, value};
+use nom::character::complete::{alpha1, line_ending, space1};
+use nom::combinator::{map, value};
 use nom::IResult;
 use nom::multi::separated_list1;
 use nom::sequence::{terminated, tuple};
 use crate::*;
 use crate::day::nom_parsed;
+use crate::parse_helpers::parse_i64;
 
 #[derive(Debug, Eq, PartialEq, Copy, Clone)]
 enum ArithOp {
@@ -58,22 +58,6 @@ impl <'a> Instruction<'a> {
         }
         target_value
     }
-}
-
-fn parse_i64(input: &str) -> IResult<&str, i64> {
-    map_res(tuple((
-        opt(tag("-")),
-        digit1
-    )), |(neg, digits)| {
-        let neg: Option<&str> = neg;
-        digits.parse::<i64>().map(|v|{
-            if neg.is_some() {
-                -v
-            } else {
-                v
-            }
-        })
-    })(input)
 }
 
 fn parse(i: &str) -> IResult<&str, Vec<Instruction>> {

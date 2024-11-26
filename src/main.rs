@@ -5,6 +5,8 @@ mod day;
 mod worker;
 mod vec2d;
 
+mod parse_helpers;
+
 use std::fs::read;
 use clap::Parser;
 use std::path::PathBuf;

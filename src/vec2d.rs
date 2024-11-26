@@ -53,7 +53,7 @@ impl <T> Vec2D<T> {
         if self.rows() == 1 {
             swap(&mut buffer, &mut self.storage)
         } else {
-            for i in 0..self.row_length {
+            for _ in 0..self.row_length {
                 buffer.push(self.storage.pop().expect("nonempty"))
             }
             buffer.reverse()

@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::time::Instant;
 use nom::bytes::complete::tag;
 use nom::character::complete::{alpha1, digit1, line_ending};
 use nom::combinator::{map, opt};
@@ -7,7 +6,7 @@ use nom::IResult;
 use nom::multi::separated_list1;
 use nom::sequence::{preceded, tuple};
 use crate::*;
-use crate::day::{nom_parsed, parse_and_execute};
+use crate::day::{nom_parsed};
 
 parsed_day!(nom_parsed(parse), part1, part2);
 
@@ -76,7 +75,6 @@ struct NodeSpec<'a> {
 impl<'a> NodeSpec<'a> {
     fn resolve(self, other_specs: &mut HashMap<&'a str, NodeSpec<'a>>, unresolved_nodes: &mut HashMap<&'a str, Day7Node<'a>>) -> Day7Node<'a> {
         let NodeSpec { name, weight, mut unresolved_child_names } = self;
-        let self_weight = weight;
         let mut children = Vec::new();
         let mut cumulative_weight = weight;
         while let Some(child) = unresolved_child_names.pop() {
@@ -91,14 +89,13 @@ impl<'a> NodeSpec<'a> {
             }
         }
 
-        Day7Node { name, self_weight, cumulative_weight, children }
+        Day7Node { name, cumulative_weight, children }
     }
 }
 
 #[derive(Debug)]
 struct Day7Node<'a> {
     name: &'a str,
-    self_weight: usize,
     cumulative_weight: usize,
     children: Vec<Day7Node<'a>>,
 }
