@@ -3,7 +3,7 @@ use std::process::ExitCode;
 use std::time::{Duration, Instant};
 use crate::Configuration;
 use crate::day::{Day, handlers};
-use crate::worker::parallelize;
+use crate::worker::{parallelize, parallelize_ordered};
 
 
 pub fn console_run(config: Configuration) -> ExitCode {
@@ -62,7 +62,7 @@ pub fn optimized_run(config: Configuration) -> ExitCode {
     let mut total_duration = Duration::ZERO;
     let mut overall_output = String::new();
     let mut day_eval_timings = String::new();
-    let results = parallelize(tasks);
+    let results = parallelize_ordered(tasks);
     for OptimizedOutput {day, timing, output_buffer} in results {
         total_duration += timing;
         overall_output += &String::from_utf8(output_buffer).expect("Valid utf8");
