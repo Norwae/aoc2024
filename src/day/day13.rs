@@ -41,7 +41,6 @@ parsed_day!(nom_parsed(separated_list1(line_ending, parse_scanner)), p1, p2);
 fn p1(scanners: &mut Vec<Scanner>) -> usize {
     let mut severity = 0;
     scanners.sort_by_key(|s|s.depth);
-    let max_lane = scanners.last().unwrap().depth;
     for scanner in scanners {
         if scanner.lane_at_timestamp(scanner.depth) == 0 {
             severity += scanner.depth * scanner.range
@@ -51,14 +50,20 @@ fn p1(scanners: &mut Vec<Scanner>) -> usize {
     severity
 }
 
+
 fn p2(scanners: Vec<Scanner>) -> usize {
     let mut delay = 0;
+    let mut delay_increment = 1;
 
     'wait: loop {
-        delay += 1;
         for scanner in &scanners {
             if scanner.lane_at_timestamp(delay + scanner.depth) == 0 {
+                delay += delay_increment;
                 continue 'wait
+            }
+
+            if scanner.range == 2 {
+                delay_increment = 2;
             }
         }
 
