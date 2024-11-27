@@ -22,7 +22,7 @@ impl KnotHash {
         Self { values: INITIAL_VALUES, scratch: [0u8; 256], cursor: 0, skip: 0 }
     }
 
-    pub fn update(&mut self, input: &[u8]) {
+    fn update(&mut self, input: &[u8]) {
         for byte in input {
             self.perform_twist(*byte as usize)
         }
@@ -51,7 +51,18 @@ impl KnotHash {
         self.values[0] as u32 * self.values[1] as u32
     }
 
-    pub fn hash(&self) -> u128 {
+    pub fn hash(input: &[u8]) -> u128 {
+        let mut slf = Self::new();
+        const ROUND_SUFFIX: [u8;5] = [17, 31, 73, 47, 23];
+        for _ in 0..64 {
+            slf.update(input);
+            slf.update(&ROUND_SUFFIX);
+        }
+
+        slf.finish()
+    }
+
+    fn finish(&self) -> u128 {
         let mut overall_hash = 0u128;
         for chunk_idx in 0..16 {
             overall_hash <<= 8;
@@ -77,13 +88,8 @@ simple_day!(|input|{
     }
 
     let part1 = list.fingerprint();
-    let mut round_offsets = input.bytes().collect::<Vec<_>>();
-    round_offsets.extend_from_slice(&[17, 31, 73, 47, 23]);
-    let mut list = KnotHash::new();
-    for _ in 0..64 {
-        list.update(&round_offsets)
-    }
-    let part2 = list.hash();
+
+    let part2 = KnotHash::hash(input.as_bytes());
 
     format!("Part 1: {part1}, Part2: {part2:0>32x}")
 });

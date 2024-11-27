@@ -3,7 +3,7 @@ use std::process::ExitCode;
 use std::time::{Duration, Instant};
 use crate::Configuration;
 use crate::day::{Day, handlers};
-use crate::worker::{parallelize, parallelize_ordered};
+use crate::worker::parallelize_ordered;
 
 
 pub fn console_run(config: Configuration) -> ExitCode {
