@@ -5,13 +5,8 @@ use nom::bytes::complete::{tag, take};
 use nom::combinator::map;
 use nom::multi::separated_list1;
 use nom::sequence::tuple;
-use nom::{bytes, IResult};
-use std::borrow::Cow;
-use std::collections::{BTreeMap, HashMap};
+use nom::IResult;
 use std::fmt::format;
-use std::mem;
-use std::mem::swap;
-use std::time::Instant;
 use crate::parse_helpers::parse_unsigned_nr;
 
 enum Instruction {
@@ -52,8 +47,7 @@ fn parse_instruction(input: &str) -> IResult<&str, Instruction> {
 struct Program {
     instructions: Vec<Instruction>,
     step: usize,
-    state: u64,
-    run_history: HashMap<u64, usize>
+    run_history: Vec<u64>
 }
 
 impl Program {
@@ -97,7 +91,7 @@ impl Program {
         replacement | blankedbytes
     }
     fn run(&mut self) -> Option<(usize, usize)> {
-        let mut dancers = self.state;
+        let mut dancers = self.run_history[self.step];
         for i in &self.instructions {
             match i {
                 Instruction::Rotate(len) => {
@@ -116,22 +110,21 @@ impl Program {
             }
         }
 
-        match self.run_history.get(&dancers) {
+        match self.run_history.iter().position(|prev|*prev == dancers) {
             None => {
-                self.run_history.insert(dancers, self.step);
-                self.state = dancers;
+                self.run_history.push(dancers);
                 self.step += 1;
                 None
             }
             Some(v) => {
-                Some((*v, self.step))
+                Some((v, self.step + 1))
             }
         }
     }
 
     fn state_at_formatted(&self, index: usize) -> String {
-        let state = self.run_history.iter().find(|(_, offset)| **offset == index).unwrap().0;
-        Self::format_state(*state)
+        let state = self.run_history[index];
+        Self::format_state(state)
     }
 
     fn format_state(state: u64) -> String {
@@ -146,20 +139,17 @@ impl Program {
     }
 
     fn last_formatted(&self) -> String {
-        let last = self.state;
-        Self::format_state(last)
+        self.state_at_formatted(self.step)
     }
 }
 
 fn parse_prg(input: &str) -> IResult<&str, Program> {
     map(separated_list1(tag(","), parse_instruction), |instructions|{
         let step = 0;
-        let state = 0x0123456789abcdef;
-        let mut run_history = HashMap::new();
-        run_history.insert(state, 0);
+        let state = 0x0123456789abcdefu64;
+        let  run_history = vec![state];
         Program{
             step,
-            state,
             run_history,
             instructions
         }
@@ -175,21 +165,13 @@ fn p1(i: &mut Program) -> String {
 
 fn p2(mut i: Program) -> String {
     let mut complete = None;
-    let mut c = 0;
-    let mut start = Instant::now();
     while complete.is_none() {
         complete = i.run();
-        c+= 1;
-        if c % (1 << 16) == 0 {
-            dbg!(c, Instant::now() - start);
-            start = Instant::now();
-        }
     }
     let (prefix, cycle_length) = complete.unwrap();
     let base = 1000000000;
     let time_spend_in_cyles = base - prefix;
     let cycle_offset = time_spend_in_cyles % cycle_length;
 
-    dbg!(base, time_spend_in_cyles, cycle_offset);
-    i.state_at_formatted(1 + prefix + cycle_offset)
+    i.state_at_formatted(prefix + cycle_offset)
 }
