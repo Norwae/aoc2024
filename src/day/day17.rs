@@ -55,7 +55,7 @@ fn p1(stride: &mut usize) -> u32 {
     let mut list = RingList::default();
     list.push(0);
     let mut cursor = list.cursor(0);
-    for i in 1..=50_000_000 {
+    for i in 1..=2017 {
         cursor.advance(stride);
         cursor.insert(i);
     }
