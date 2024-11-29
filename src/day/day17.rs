@@ -50,13 +50,13 @@ impl <T> RingListCursor<'_, T> {
     }
 }
 
-fn p1(stride: &mut usize) -> u32 {
+fn p1(stride: &mut u32) -> u32 {
     let stride = *stride;
     let mut list = RingList::default();
     list.push(0);
     let mut cursor = list.cursor(0);
     for i in 1..=2017 {
-        cursor.advance(stride);
+        cursor.advance(stride as usize);
         cursor.insert(i);
     }
     cursor.advance(1);
@@ -64,4 +64,18 @@ fn p1(stride: &mut usize) -> u32 {
     *cursor.current()
 }
 
-parsed_day!(|str|str.trim().parse::<usize>(), p1);
+fn p2(stride: u32) -> u32 {
+    let mut cursor = 0;
+    let mut one_contents = 0;
+
+    for i in 1u32..=50000000 {
+        cursor = ((cursor + stride) % i) + 1;
+        if cursor == 1 {
+            one_contents = i
+        }
+    }
+
+    one_contents
+}
+
+parsed_day!(|str|str.trim().parse::<u32>(), p1, p2);
