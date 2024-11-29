@@ -1,5 +1,5 @@
 use std::collections::HashSet;
-
+use std::io::Write;
 use crate::simple_day;
 
 simple_day!(solve);

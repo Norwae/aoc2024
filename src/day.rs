@@ -130,19 +130,17 @@ const fn nom_parsed<'i, ParseResult: 'i, NomFunc: FnOnce(&'i str) -> IResult<&'i
         simple_day! { |$n, _out| $body }
     };
     (| $name:ident, $out:ident | $body:expr ) => {
-        use crate::ui::{Verbose, Terse, UIWrite};
-        use crate::day::Day;
-        use std::io::Write;
 
-        pub const fn register<T: Write>() -> Option<Day<T>> {
-            fn solve_trampoline<T: Write, UI: UIWrite>($name: &str, writer: &mut T) {
+        pub const fn register<T: std::io::Write>() -> Option<crate::day::Day<T>> {
+            fn solve_trampoline<T: std::io::Write, UI: crate::ui::UIWrite>($name: &str, writer: &mut T) {
+                use crate::ui::UIWrite;
                 let mut $out = UI::create(writer, module_path!());
 
                 $out.info(format_args!("Started"));
                 let result = $body;
                 $out.result(format_args!("{result}"));
             }
-            Some(Day {terse: solve_trampoline::<T, Terse<T>>, verbose: solve_trampoline::<T, Verbose<T>> })
+            Some(crate::day::Day {terse: solve_trampoline::<T, crate::ui::Terse<T>>, verbose: solve_trampoline::<T, crate::ui::Verbose<T>> })
         }
     };
  }

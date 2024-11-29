@@ -1,6 +1,7 @@
 use std::mem::swap;
 use std::ops::{Add, Index, IndexMut};
 
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum CompassDirection  {
     NORTH, EAST, SOUTH, WEST
 }
@@ -9,10 +10,10 @@ impl CompassDirection {
     pub const ALL: [CompassDirection; 4] = [CompassDirection::NORTH, CompassDirection::EAST, CompassDirection::SOUTH, CompassDirection::WEST];
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, Default)]
 pub struct Index2D {
-    row: usize,
-    column: usize,
+    pub row: usize,
+    pub column: usize,
 }
 
 impl Index2D {
