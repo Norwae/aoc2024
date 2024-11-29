@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use nom::bytes::complete::tag;
 use nom::character::complete::{line_ending, space0};
 use nom::IResult;
@@ -97,6 +97,7 @@ fn p2(mut input: Vec<Particle>) -> String {
             if ps.len() == 1 {
                 ps.pop()
             } else {
+                clean = false;
                 None
             }
         }).collect();

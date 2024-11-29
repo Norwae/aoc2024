@@ -3,7 +3,7 @@ use nom::bytes::complete::tag;
 use nom::character::complete::{line_ending, one_of, space1};
 use nom::combinator::map;
 use nom::IResult;
-use nom::multi::{fill, separated_list1};
+use nom::multi::separated_list1;
 use nom::sequence::tuple;
 use crate::*;
 use crate::day::nom_parsed;
