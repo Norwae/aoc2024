@@ -6,7 +6,6 @@ use nom::combinator::map;
 use nom::multi::separated_list1;
 use nom::sequence::tuple;
 use nom::IResult;
-use std::fmt::format;
 use crate::parse_helpers::parse_unsigned_nr;
 
 enum Instruction {

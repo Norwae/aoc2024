@@ -38,10 +38,6 @@ impl<T> RingListCursor<'_, T> {
         self.offset
     }
 
-    pub fn current(&self) -> &T {
-        &self.list.storage[self.offset].1
-    }
-
     pub fn insert(&mut self, value: T) {
         let next = self.list.storage[self.offset].0;
         self.list.storage.push((next, value));
@@ -56,7 +52,7 @@ fn p1(stride: &mut u32) -> usize {
     let mut list = RingList::default();
     list.push(());
     let mut cursor = list.cursor(0);
-    for i in 1..=2017 {
+    for _ in 1..=2017 {
         cursor.advance(stride as usize);
         cursor.insert(());
     }
