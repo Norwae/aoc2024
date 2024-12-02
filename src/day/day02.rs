@@ -23,7 +23,6 @@ enum Direction {
 
 impl Direction {
     fn from_difference(a: i32, b: i32) -> Option<Self> {
-
         if b < a {
             Some(Direction::DESCENDING)
         } else if b > a {
@@ -59,13 +58,13 @@ fn line_is_safe_simple(line: &[i32]) -> bool {
     true
 }
 
-fn line_is_safe_with_tolerance(line: &Vec<i32>) -> bool {
-    let mut skip_buffer = vec![0; line.len() - 1];
+fn line_is_safe_with_tolerance(line: &Vec<i32>, skip_buffer: &mut [i32]) -> bool {
+    let mut skip_buffer = &mut skip_buffer[0..line.len() - 1];
     for i in 0..=line.len() - 1 {
         (&mut skip_buffer[0..i]).copy_from_slice(&line[0..i]);
         (&mut skip_buffer[i..]).copy_from_slice(&line[i+1..]);
 
-        if line_is_safe_simple(&skip_buffer) {
+        if line_is_safe_simple(skip_buffer) {
             return true
         }
     }
@@ -78,5 +77,6 @@ fn count_safe_lines(input: &mut Vec<Vec<i32>>) -> usize {
 }
 
 fn count_safe_lines_with_tolerance(input: Vec<Vec<i32>>) -> usize {
-    input.into_iter().filter(|l| line_is_safe_with_tolerance(l)).count()
+    let mut buffer = [0i32; 128];
+    input.into_iter().filter(|l| line_is_safe_with_tolerance(l, &mut buffer)).count()
 }
