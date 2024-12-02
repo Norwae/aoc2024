@@ -31,6 +31,11 @@ impl Direction {
             None
         }
     }
+
+    fn validate_step(self, l: i32, r: i32) -> bool {
+        let diff = if self == Direction::ASCENDING { r - l } else { l - r };
+        ACCEPTABLE_DELTA.contains(&diff)
+    }
 }
 
 fn line_is_safe_simple(line: &[i32]) -> bool {
@@ -45,14 +50,8 @@ fn line_is_safe_simple(line: &[i32]) -> bool {
     for s in line.windows(2) {
         let l = s[0];
         let r = s[1];
-        let diff = if direction == Direction::DESCENDING {
-            l - r
-        } else {
-            r - l
-        };
-
-        if !ACCEPTABLE_DELTA.contains(&diff) {
-            return false;
+        if !direction.validate_step(l, r) {
+            return false
         }
     }
     true
@@ -62,10 +61,10 @@ fn line_is_safe_with_tolerance(line: &Vec<i32>, skip_buffer: &mut [i32]) -> bool
     let mut skip_buffer = &mut skip_buffer[0..line.len() - 1];
     for i in 0..=line.len() - 1 {
         (&mut skip_buffer[0..i]).copy_from_slice(&line[0..i]);
-        (&mut skip_buffer[i..]).copy_from_slice(&line[i+1..]);
+        (&mut skip_buffer[i..]).copy_from_slice(&line[i + 1..]);
 
         if line_is_safe_simple(skip_buffer) {
-            return true
+            return true;
         }
     }
     false
