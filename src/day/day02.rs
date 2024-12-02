@@ -1,13 +1,20 @@
-use std::ops::{RangeBounds, RangeInclusive};
+use std::mem::swap;
+use std::ops::{Index, RangeBounds, RangeInclusive};
 use nom::character::complete::{line_ending, space1};
+use nom::combinator::map;
 use nom::multi::separated_list1;
 use crate::*;
 use crate::day::nom_parsed;
 use crate::parse_helpers::parse_unsigned_nr;
 
+struct Day2 {
+    candidates: Vec<Vec<i32>>,
+    clean: usize,
+}
+
 parsed_day!(
     nom_parsed(
-        separated_list1(line_ending, separated_list1(space1, parse_unsigned_nr::<i32>))
+        map(separated_list1(line_ending, separated_list1(space1, parse_unsigned_nr::<i32>)), |candidates|Day2{candidates, clean: 0})
     ),
     count_safe_lines,
     count_safe_lines_with_tolerance
@@ -38,32 +45,39 @@ impl Direction {
     }
 }
 
-fn line_is_safe_simple(line: &[i32]) -> bool {
-    if line.len() < 2 {
-        return true;
-    }
+fn line_is_safe_simple(line: &(impl Index<usize, Output=i32> + ?Sized), length: usize) -> bool {
     let direction = Direction::from_difference(line[0], line[1]);
     if direction.is_none() {
         return false;
     }
     let direction = direction.unwrap();
-    for s in line.windows(2) {
-        let l = s[0];
-        let r = s[1];
+    for i in 0..length - 1 {
+        let l = line[i];
+        let r = line[i + 1];
         if !direction.validate_step(l, r) {
-            return false
+            return false;
         }
     }
     true
 }
 
-fn line_is_safe_with_tolerance(line: &Vec<i32>, skip_buffer: &mut [i32]) -> bool {
-    let mut skip_buffer = &mut skip_buffer[0..line.len() - 1];
-    for i in 0..=line.len() - 1 {
-        (&mut skip_buffer[0..i]).copy_from_slice(&line[0..i]);
-        (&mut skip_buffer[i..]).copy_from_slice(&line[i + 1..]);
+struct SkipSlice<'a>(&'a [i32], usize);
+impl <'a> Index<usize> for SkipSlice<'a> {
+    type Output = i32;
 
-        if line_is_safe_simple(skip_buffer) {
+    fn index(&self, index: usize) -> &'a Self::Output {
+        if index < self.1 {
+            &self.0[index]
+        } else {
+            &self.0[index + 1]
+        }
+    }
+}
+
+fn line_is_safe_with_tolerance(line: &Vec<i32>) -> bool {
+    let reduced_line_length = line.len() - 1;
+    for i in 0..=reduced_line_length {
+        if line_is_safe_simple(&SkipSlice(line, i), reduced_line_length) {
             return true;
         }
     }
@@ -71,11 +85,25 @@ fn line_is_safe_with_tolerance(line: &Vec<i32>, skip_buffer: &mut [i32]) -> bool
 }
 
 
-fn count_safe_lines(input: &mut Vec<Vec<i32>>) -> usize {
-    input.iter().filter(|l| line_is_safe_simple(l)).count()
+fn count_safe_lines(input: &mut Day2) -> usize {
+    let Day2 { candidates, clean } = input;
+    let mut tmp = Vec::new();
+    let mut count = 0;
+    swap(&mut tmp, candidates);
+
+    for line in tmp.into_iter() {
+        if line_is_safe_simple(&line, line.len()) {
+            count += 1;
+        } else {
+            candidates.push(line)
+        }
+    }
+    *clean = count;
+
+    count
 }
 
-fn count_safe_lines_with_tolerance(input: Vec<Vec<i32>>) -> usize {
-    let mut buffer = [0i32; 128];
-    input.into_iter().filter(|l| line_is_safe_with_tolerance(l, &mut buffer)).count()
+fn count_safe_lines_with_tolerance(input: Day2) -> usize {
+    input.clean +
+        input.candidates.into_iter().filter(|l| line_is_safe_with_tolerance(l)).count()
 }
