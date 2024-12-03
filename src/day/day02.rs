@@ -1,5 +1,6 @@
 use std::mem::swap;
 use std::ops::{Index, RangeInclusive};
+use nom::AsBytes;
 use nom::character::complete::{line_ending, space1};
 use nom::combinator::map;
 use nom::multi::separated_list1;
@@ -8,14 +9,37 @@ use crate::day::nom_parsed;
 use crate::parse_helpers::parse_unsigned_nr;
 
 struct Day2 {
-    candidates: Vec<Vec<i32>>,
+    candidates: Vec<i32>,
     clean: usize,
 }
 
 parsed_day!(
-    nom_parsed(
-        map(separated_list1(line_ending, separated_list1(space1, parse_unsigned_nr::<i32>)), |candidates|Day2{candidates, clean: 0})
-    ),
+    |mut input|{
+        let mut candidates = Vec::new();
+
+        let mut acc = 0;
+        for b in input.as_bytes() {
+            let b = *b;
+            match b {
+                b'0'..=b'9' => {
+                    acc *= 10;
+                    acc += (b - b'0') as i32;
+                },
+                b' ' => {
+                    candidates.push(acc);
+                    acc = 0;
+                }
+                b'\n' => {
+                    candidates.push(acc);
+                    candidates.push(0);
+                    acc = 0;
+                }
+                _ => (),
+            }
+        }
+
+        Ok::<Day2, !>(Day2 { candidates, clean: 0})
+    },
     count_safe_lines,
     count_safe_lines_with_tolerance
 );
@@ -62,7 +86,7 @@ fn line_is_safe_simple<L: Index<usize, Output=i32> + ?Sized>(line: &L, length: u
 }
 
 struct SkipSlice<'a>(&'a [i32], usize);
-impl <'a> Index<usize> for SkipSlice<'a> {
+impl<'a> Index<usize> for SkipSlice<'a> {
     type Output = i32;
 
     fn index(&self, index: usize) -> &'a Self::Output {
@@ -74,7 +98,7 @@ impl <'a> Index<usize> for SkipSlice<'a> {
     }
 }
 
-fn line_is_safe_with_tolerance(line: &Vec<i32>) -> bool {
+fn line_is_safe_with_tolerance(line: &[i32]) -> bool {
     let reduced_line_length = line.len() - 1;
     for i in 0..=reduced_line_length {
         if line_is_safe_simple(&SkipSlice(line, i), reduced_line_length) {
@@ -90,13 +114,17 @@ fn count_safe_lines(input: &mut Day2) -> usize {
     let mut tmp = Vec::new();
     let mut count = 0;
     swap(&mut tmp, candidates);
+    let mut tmp = tmp.as_slice();
 
-    for line in tmp.into_iter() {
-        if line_is_safe_simple(&line, line.len()) {
+    while let Some(idx) = tmp.iter().position(|it| *it == 0) {
+        let line = &tmp[0..idx];
+        if !line.is_empty() && line_is_safe_simple(line, line.len()) {
             count += 1;
         } else {
-            candidates.push(line)
+            candidates.extend_from_slice(line);
+            candidates.push(0);
         }
+        tmp = &tmp[idx + 1..];
     }
     *clean = count;
 
@@ -104,6 +132,16 @@ fn count_safe_lines(input: &mut Day2) -> usize {
 }
 
 fn count_safe_lines_with_tolerance(input: Day2) -> usize {
-    input.clean +
-        input.candidates.into_iter().filter(|l| line_is_safe_with_tolerance(l)).count()
+    let Day2 { clean, candidates } = input;
+    let mut tmp = candidates.as_slice();
+    let mut count = 0;
+
+    while let Some(idx) = tmp.iter().position(|it| *it == 0) {
+        let line = &tmp[0..idx];
+        if !line.is_empty() && line_is_safe_with_tolerance(line) {
+            count += 1;
+        }
+        tmp = &tmp[idx + 1..];
+    }
+    clean + count
 }
