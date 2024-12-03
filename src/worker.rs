@@ -90,7 +90,6 @@ mod test {
     use std::io::Write;
     use std::thread::sleep;
     use std::time::Duration;
-    use gtk4::ResponseType::No;
     use rand::{RngCore, thread_rng};
     use crate::ui::UIWrite;
     use crate::worker::{parallelize, race};
@@ -107,7 +106,7 @@ mod test {
         }
     }
     impl UIWrite for NoUI {
-        fn create<T: Write>(out: &mut T, prefix: &'static str) -> impl UIWrite {
+        fn create<T: Write>(_out: &mut T, _prefix: &'static str) -> impl UIWrite {
             NoUI
         }
 
