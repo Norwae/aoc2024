@@ -3,6 +3,7 @@ use std::fmt::{Display, Formatter};
 use std::io::Write;
 use nom::IResult;
 use crate::ui::UIWrite;
+use crate::timed::time_span;
 
 mod day01;
 mod day02;
@@ -62,14 +63,13 @@ pub fn parse_and_execute<
     UI: UIWrite>(
     parse: Parse, part1: Part1, part2: Part2, input: &'input str, output: &'output mut UI
 ) -> String {
-    let parsed = parse(input);
+    let (parsed, parse_time) = time_span(|| parse(input));
     match parsed {
         Ok(mut parsed) => {
-            output.info(format_args!("Parsed input successfully\n"));
-            let part1 = part1(&mut parsed);
-            output.info(format_args!("Completed part 1 calculation: {}\n", &part1));
-            let part2 = part2(parsed);
-            format!("Part1: {}, Part2: {}", part1, part2)
+            output.info(format_args!("Parsed input successfully"));
+            let (part1, part1_time) = time_span(||part1(&mut parsed));
+            let (part2, part2_time) = time_span(||part2(parsed));
+            format!("Part1: {part1}, Part2: {part2} (timings: parse={parse_time:?}, part1={part1_time:?}, part2={part2_time:?})")
         }
         Err(failed) => {
             output.critical(format_args!("Parsing failed for {}: {}", input, failed));

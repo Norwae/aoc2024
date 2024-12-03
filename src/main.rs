@@ -5,6 +5,8 @@ mod day;
 mod worker;
 mod vec2d;
 
+mod timed;
+
 mod parse_helpers;
 
 use std::fs::read;
