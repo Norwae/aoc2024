@@ -1,12 +1,8 @@
 use std::collections::HashMap;
-use std::mem::swap;
-use nom::character::complete::{line_ending, space1};
 use nom::IResult;
-use nom::multi::separated_list1;
-use nom::sequence::{separated_pair};
 use crate::*;
-use crate::day::{nom_byte_parsed, nom_parsed};
-use crate::parse_helpers::{parse_unsigned_nr, parse_unsigned_nr_bytes};
+use crate::day::{nom_byte_parsed};
+use crate::parse_helpers::{parse_unsigned_nr_bytes};
 
 fn parse(mut input: &[u8]) -> IResult<&[u8], (Vec<i32>, Vec<i32>)> {
     let mut switch = false;

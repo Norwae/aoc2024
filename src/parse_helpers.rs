@@ -6,6 +6,14 @@ use nom::combinator::{map, map_res, opt};
 use nom::IResult;
 use nom::sequence::tuple;
 
+pub fn parse_signed_nr_bytes<T: Mul<Output=T> + Add<Output=T> + From<u8> + Neg<Output=T> + Copy>(input: &[u8]) -> IResult<&[u8], T> {
+    if input[0] == b'-' {
+        parse_unsigned_nr_bytes::<T>(&input[1..]).map(|(rest, result)|(rest, -result))
+    } else {
+        parse_unsigned_nr_bytes::<T>(input)
+    }
+}
+
 pub fn parse_unsigned_nr_bytes<T: Mul<Output=T> + Add<Output=T> + From<u8> + Copy>(input: &[u8]) -> IResult<&[u8], T> {
     map(digit1, move |bytes|{
         let mut acc = <T as From<u8>>::from(0);
