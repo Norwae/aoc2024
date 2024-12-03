@@ -23,18 +23,17 @@ fn parse_mul(input: &str) -> IResult<&str, Instruction> {
     Ok((rest, Instruction::Mul(x, y)))
 }
 
-fn parse_toggle(input: &str) -> IResult<&str, Instruction> {
-    alt((
-        value(Instruction::Enable(true), tag("do()")),
-        value(Instruction::Enable(false), tag("don't()"))
-    ))(input)
-}
 
 fn parse(mut input: &str) -> IResult<&str, Vec<Instruction>> {
     let mut result = Vec::new();
-    let mut parse_instruction = alt((parse_mul, parse_toggle));
     while !input.is_empty() {
-        if let Ok((rest, inst)) = parse_instruction(input) {
+        if input.starts_with("do()") {
+            input = &input[4..];
+            result.push(Instruction::Enable(true))
+        } else if input.starts_with("don't()") {
+            input = &input[7..];
+            result.push(Instruction::Enable(false))
+        } else if let Ok((rest, inst)) = parse_mul(input) {
             input = rest;
             result.push(inst)
         } else {
