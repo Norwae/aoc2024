@@ -1,12 +1,6 @@
 use std::mem::swap;
 use std::ops::{Index, RangeInclusive};
-use nom::AsBytes;
-use nom::character::complete::{line_ending, space1};
-use nom::combinator::map;
-use nom::multi::separated_list1;
 use crate::*;
-use crate::day::nom_parsed;
-use crate::parse_helpers::parse_unsigned_nr;
 
 struct Day2 {
     candidates: Vec<i32>,
@@ -14,7 +8,7 @@ struct Day2 {
 }
 
 parsed_day!(
-    |mut input|{
+    |input|{
         let mut candidates = Vec::new();
 
         let mut acc = 0;

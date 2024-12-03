@@ -1,11 +1,9 @@
-use nom::branch::alt;
 use nom::bytes::complete::tag;
-use nom::combinator::value;
-use nom::IResult;
+use nom::{AsBytes, IResult};
 use nom::sequence::{delimited, separated_pair};
 use crate::*;
 use crate::day::nom_parsed;
-use crate::parse_helpers::parse_signed_nr;
+use crate::parse_helpers::{parse_signed_nr, parse_unsigned_nr, parse_unsigned_nr_bytes};
 
 #[derive(Debug, Copy, Clone)]
 enum Instruction {
@@ -13,35 +11,36 @@ enum Instruction {
     Enable(bool),
 }
 
-fn parse_mul(input: &str) -> IResult<&str, Instruction> {
+fn parse_mul(input: &[u8]) -> IResult<&[u8], Instruction> {
     let (rest, (x, y)) = delimited(
-        tag("mul("),
-        separated_pair(parse_signed_nr, tag(","), parse_signed_nr),
-        tag(")"),
+        tag(b"mul("),
+        separated_pair(parse_unsigned_nr_bytes, tag(b","), parse_unsigned_nr_bytes),
+        tag(b")"),
     )(input)?;
 
     Ok((rest, Instruction::Mul(x, y)))
 }
 
 
-fn parse(mut input: &str) -> IResult<&str, Vec<Instruction>> {
+fn parse(input: &str) -> IResult<&str, Vec<Instruction>> {
     let mut result = Vec::new();
-    while !input.is_empty() {
-        if input.starts_with("do()") {
-            input = &input[4..];
+    let mut bytes = input.as_bytes();
+    while !bytes.is_empty() {
+        if bytes.starts_with(b"do()") {
+            bytes = &bytes[4..];
             result.push(Instruction::Enable(true))
-        } else if input.starts_with("don't()") {
-            input = &input[7..];
+        } else if bytes.starts_with(b"don't()") {
+            bytes = &bytes[7..];
             result.push(Instruction::Enable(false))
-        } else if let Ok((rest, inst)) = parse_mul(input) {
-            input = rest;
+        } else if let Ok((rest, inst)) = parse_mul(bytes) {
+            bytes = rest;
             result.push(inst)
         } else {
-            input = &input[1..]
+            bytes = &bytes[1..]
         }
     }
 
-    Ok((input, result))
+    Ok(("", result))
 }
 
 parsed_day!(nom_parsed(parse), |v| {

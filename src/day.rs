@@ -89,6 +89,26 @@ impl Display for SimpleError {
 
 impl Error for SimpleError {}
 
+const fn nom_byte_parsed<'i, ParseResult: 'i, NomFunc: FnOnce(&'i [u8]) -> IResult<&'i[u8], ParseResult>>(
+    nom_handler: NomFunc
+) -> impl FnOnce(&'i str) -> Result<ParseResult, SimpleError> {
+    |input| match nom_handler(input.as_bytes()) {
+        Ok((tail, parsed)) if tail.len() <= 1 => {
+            if tail.is_empty() ||  tail[0] == b'\n' {
+                Ok(parsed)
+            } else {
+                Err(SimpleError(format!("Incomplete parse: {}", String::from_utf8_lossy(tail))))
+            }
+        }
+        Ok((rest, _)) => {
+            Err(SimpleError(format!("Incomplete parse: {}", String::from_utf8_lossy(rest))))
+        }
+        Err(e) => {
+            Err(SimpleError(format!("{e}")))
+        }
+    }
+}
+
 const fn nom_parsed<'i, ParseResult: 'i, NomFunc: FnOnce(&'i str) -> IResult<&'i str, ParseResult>>(
     nom_handler: NomFunc
 ) -> impl FnOnce(&'i str) -> Result<ParseResult, SimpleError> {
