@@ -45,7 +45,7 @@ impl Direction {
     }
 }
 
-fn line_is_safe_simple(line: &(impl Index<usize, Output=i32> + ?Sized), length: usize) -> bool {
+fn line_is_safe_simple<L: Index<usize, Output=i32> + ?Sized>(line: &L, length: usize) -> bool {
     let direction = Direction::from_difference(line[0], line[1]);
     if direction.is_none() {
         return false;

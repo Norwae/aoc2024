@@ -23,7 +23,3 @@ pub fn parse_signed_nr<T: FromStr + Neg<Output=T>>(input: &str) -> IResult<&str,
         }
     })(input)
 }
-
-pub fn parse_i64(input: &str) -> IResult<&str, i64> {
-    parse_signed_nr(input)
-}
