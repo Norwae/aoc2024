@@ -27,19 +27,24 @@ impl UIMode {
     }
 }
 
-pub trait UIWrite : Write {
+pub trait UIFactory {
     fn create<T: Write>(out: &mut T, prefix: &'static str) -> impl UIWrite;
+}
+
+pub trait UIWrite : Write {
     fn info(&mut self, fmt: Arguments<'_>);
     fn critical(&mut self, fmt: Arguments<'_>);
     fn result(&mut self, fmt: Arguments<'_>);
 }
 
-pub struct Verbose<T> {
+pub struct Verbose;
+
+struct VerboseUI<T> {
     out: T,
     prefix: &'static str
 }
 
-impl <T: Write> Write for Verbose<T> {
+impl <T: Write> Write for VerboseUI<T> {
     fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
         self.out.write(buf)
     }
@@ -49,10 +54,13 @@ impl <T: Write> Write for Verbose<T> {
     }
 }
 
-impl <T: Write> UIWrite for Verbose<T> {
+impl UIFactory for Verbose {
     fn create<T2: Write>(out: &mut T2, prefix: &'static str) -> impl UIWrite {
-        Verbose { out, prefix }
+        VerboseUI { out, prefix }
     }
+}
+
+impl <T: Write> UIWrite for VerboseUI<T> {
     fn info(&mut self, fmt: Arguments<'_>) {
         _ = self.write(self.prefix.as_bytes());
         _ = self.write(b" INFO: ");
@@ -78,12 +86,14 @@ impl <T: Write> UIWrite for Verbose<T> {
     }
 }
 
-pub struct Terse<T> {
+pub struct Terse;
+
+struct TerseUI<T> {
     out: T,
     prefix: &'static str,
     had_output: bool
 }
-impl <T: Write> Write for Terse<T> {
+impl <T: Write> Write for TerseUI<T> {
     fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
         if self.had_output {
             Ok(buf.len())
@@ -98,10 +108,13 @@ impl <T: Write> Write for Terse<T> {
     }
 }
 
-impl <T: Write> UIWrite for Terse<T> {
+impl UIFactory for Terse {
     fn create<T2: Write>(out: &mut T2, prefix: &'static str) -> impl UIWrite {
-        Terse { out, prefix, had_output: false }
+        TerseUI { out, prefix, had_output: false }
     }
+}
+
+impl <T: Write> UIWrite for TerseUI<T> {
     fn info(&mut self, _fmt: Arguments<'_>) {
     }
 

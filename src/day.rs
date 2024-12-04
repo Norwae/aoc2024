@@ -153,7 +153,7 @@ const fn nom_parsed_str<'i, ParseResult: 'i, NomFunc: for <'tmp> FnOnce(&'tmp st
     (| $name:ident, $out:ident | $body:expr ) => {
 
         pub const fn register<T: std::io::Write>() -> Option<crate::day::Day<T>> {
-            fn solve_trampoline<T: std::io::Write, UI: crate::ui::UIWrite>($name: &[u8], writer: &mut T) {
+            fn solve_trampoline<T: std::io::Write, UI: crate::ui::UIFactory>($name: &[u8], writer: &mut T) {
                 use crate::ui::UIWrite;
                 let mut $out = UI::create(writer, module_path!());
 
@@ -161,7 +161,7 @@ const fn nom_parsed_str<'i, ParseResult: 'i, NomFunc: for <'tmp> FnOnce(&'tmp st
                 let result = $body;
                 $out.result(format_args!("{result}"));
             }
-            Some(crate::day::Day {terse: solve_trampoline::<T, crate::ui::Terse<T>>, verbose: solve_trampoline::<T, crate::ui::Verbose<T>> })
+            Some(crate::day::Day {terse: solve_trampoline::<T, crate::ui::Terse>, verbose: solve_trampoline::<T, crate::ui::Verbose> })
         }
     };
  }
