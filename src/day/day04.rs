@@ -75,6 +75,7 @@ fn solve_1(visor: &Visor) -> usize {
 
             if &bytes == XMAS || &bytes == SAMX {
                 found += 1;
+                continue;
             }
 
             bytes[1] = visor.at(row + 1, column + 1);
@@ -83,6 +84,7 @@ fn solve_1(visor: &Visor) -> usize {
 
             if &bytes == XMAS || &bytes == SAMX {
                 found += 1;
+                continue;
             }
 
 
@@ -92,6 +94,7 @@ fn solve_1(visor: &Visor) -> usize {
 
             if &bytes == XMAS || &bytes == SAMX {
                 found += 1;
+                continue;
             }
 
             bytes[1] = visor.at(row + 1, column - 1);
