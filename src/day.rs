@@ -109,26 +109,6 @@ const fn nom_parsed_bytes<'i, ParseResult: 'i, NomFunc: FnOnce(&'i [u8]) -> IRes
     }
 }
 
-const fn nom_parsed_str<'i, ParseResult: 'i, NomFunc: for <'tmp> FnOnce(&'tmp str) -> IResult<&'tmp str, ParseResult>>(
-    nom_handler: NomFunc
-) -> impl FnOnce(&'i [u8]) -> Result<ParseResult, SimpleError> {
-    |input| {
-        let string = String::from_utf8_lossy(input);
-        match nom_handler(&string) {
-            Ok((tail, parsed)) if tail.trim().is_empty() => {
-                Ok(parsed)
-            }
-            Ok((rest, _)) => {
-                Err(SimpleError(format!("Incomplete parse: {}", rest.trim())))
-            }
-            Err(e) => {
-                Err(SimpleError(format!("{e}")))
-            }
-        }
-    }
-}
-
-
 #[macro_export] macro_rules! parsed_day {
     ($parse:expr) => {
         parsed_day!($parse, |_|"UNIMPLEMENTED Part 1");
@@ -151,7 +131,6 @@ const fn nom_parsed_str<'i, ParseResult: 'i, NomFunc: for <'tmp> FnOnce(&'tmp st
         simple_day! { |$n, _out| $body }
     };
     (| $name:ident, $out:ident | $body:expr ) => {
-
         pub const fn register<T: std::io::Write>() -> Option<crate::day::Day<T>> {
             fn solve_trampoline<T: std::io::Write, UI: crate::ui::UIFactory>($name: &[u8], writer: &mut T) {
                 use crate::ui::UIWrite;

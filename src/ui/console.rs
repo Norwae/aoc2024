@@ -3,6 +3,7 @@ use std::process::ExitCode;
 use std::time::{Duration, Instant};
 use crate::Configuration;
 use crate::day::{Day, handlers};
+use crate::timed::time_span;
 use crate::worker::parallelize_ordered;
 
 
@@ -25,9 +26,7 @@ pub fn console_run(config: Configuration) -> ExitCode {
 
 fn execute_day_handler(day: u8, day_handler_function: fn(&[u8], &mut Vec<u8>), input: Vec<u8>) -> OptimizedOutput {
     let mut output_buffer = Vec::new();
-    let start = Instant::now();
-    day_handler_function(&input, &mut output_buffer);
-    let timing = Instant::now() - start;
+    let (_, timing) = time_span(|| day_handler_function(&input, &mut output_buffer));
     OptimizedOutput {
         day,
         timing,
