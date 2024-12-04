@@ -2,8 +2,8 @@ use nom::character::complete::u32;
 use crate::*;
 use crate::vec2d::Index2D;
 
-const XMAS: &'static [u8;4] = b"XMAS";
-const SAMX: &'static [u8;4] = b"SAMX";
+const XMAS: &'static [u8; 4] = b"XMAS";
+const SAMX: &'static [u8; 4] = b"SAMX";
 
 const X_MAS_PATTERNS: [&'static [u8; 5]; 4] = [
     /* M S
@@ -66,7 +66,7 @@ fn solve_1(visor: &Visor) -> usize {
         for column in 0..visor.columns() as i32 {
             bytes[0] = visor.at(row, column);
             if bytes[0] != b'X' && bytes[0] != b'S' {
-                continue
+                continue;
             }
 
             bytes[1] = visor.at(row, column + 1);
@@ -117,8 +117,8 @@ fn solve_2(visor: Visor) -> usize {
     for row in 0..visor.rows() as i32 {
         'col: for column in 0..visor.columns() as i32 {
             bytes[0] = visor.at(row + 1, column + 1);
-            if bytes[0] != b'A'  {
-                continue
+            if bytes[0] != b'A' {
+                continue;
             }
 
             bytes[1] = visor.at(row, column);
