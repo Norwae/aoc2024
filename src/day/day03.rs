@@ -2,7 +2,7 @@ use nom::bytes::complete::tag;
 use nom::IResult;
 use nom::sequence::{delimited, separated_pair};
 use crate::*;
-use crate::day::nom_parsed;
+use crate::day::nom_parsed_bytes;
 use crate::parse_helpers::parse_unsigned_nr_bytes;
 
 #[derive(Debug, Copy, Clone)]
@@ -22,9 +22,8 @@ fn parse_mul(input: &[u8]) -> IResult<&[u8], Instruction> {
 }
 
 
-fn parse(input: &str) -> IResult<&str, Vec<Instruction>> {
+fn parse(mut bytes: &[u8]) -> IResult<&[u8], Vec<Instruction>> {
     let mut result = Vec::new();
-    let mut bytes = input.as_bytes();
     while !bytes.is_empty() {
         if bytes.starts_with(b"do()") {
             bytes = &bytes[4..];
@@ -40,10 +39,10 @@ fn parse(input: &str) -> IResult<&str, Vec<Instruction>> {
         }
     }
 
-    Ok(("", result))
+    Ok((&[], result))
 }
 
-parsed_day!(nom_parsed(parse), |v| {
+parsed_day!(nom_parsed_bytes(parse), |v| {
     v.into_iter().fold(0, |accu, i| {
         if let Instruction::Mul(x, y) = i {
             accu + *x * *y

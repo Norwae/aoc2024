@@ -1,6 +1,4 @@
-use nom::character::complete::u32;
 use crate::*;
-use crate::vec2d::Index2D;
 
 const XMAS: &'static [u8; 4] = b"XMAS";
 const SAMX: &'static [u8; 4] = b"SAMX";
@@ -137,4 +135,4 @@ fn solve_2(visor: Visor) -> usize {
     found
 }
 
-parsed_day!(|str|Ok::<_, !>(Visor::new(str.as_bytes())), |i|solve_1(i), solve_2);
+parsed_day!(|bytes|Ok::<_, !>(Visor::new(bytes)), |i|solve_1(i), solve_2);

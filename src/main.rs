@@ -47,18 +47,14 @@ impl Configuration {
         }
     }
 
-    fn load_input(&self, day: u8) -> String {
+    fn load_input(&self, day: u8) -> Vec<u8> {
         let mut path = self.input_path.clone();
         path.push(format!("{:02}", day));
 
         if let Ok(loaded_contents) = read(&path) {
-            let mut stringified = String::from_utf8(loaded_contents).expect("utf8 input");
-            if !stringified.ends_with("\n") {
-                stringified.push('\n');
-            }
-            stringified
+            loaded_contents
         } else {
-            "".to_string()
+            Vec::new()
         }
     }
 }

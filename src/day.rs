@@ -32,8 +32,8 @@ mod day24;
 mod day25;
 
 pub struct Day<T: Write> {
-    pub terse: fn(&str, &mut T),
-    pub verbose: fn(&str, &mut T),
+    pub terse: fn(&[u8], &mut T),
+    pub verbose: fn(&[u8], &mut T),
 }
 
 impl<T: Write> Clone for Day<T> {
@@ -53,7 +53,7 @@ impl<T: Write> Clone for Day<T> {
 pub fn parse_and_execute<
     'input,
     'output,
-    Parse: FnOnce(&'input str) -> Result<ParseArtifact, ParseError>,
+    Parse: FnOnce(&'input [u8]) -> Result<ParseArtifact, ParseError>,
     Part1: FnOnce(&mut ParseArtifact) -> Result1,
     Part2: FnOnce(ParseArtifact) -> Result2,
     ParseArtifact: 'input,
@@ -61,7 +61,7 @@ pub fn parse_and_execute<
     Result1: Display,
     Result2: Display,
     UI: UIWrite>(
-    parse: Parse, part1: Part1, part2: Part2, input: &'input str, output: &'output mut UI
+    parse: Parse, part1: Part1, part2: Part2, input: &'input [u8], output: &'output mut UI
 ) -> String {
     let (parsed, parse_time) = time_span(|| parse(input));
     match parsed {
@@ -72,7 +72,7 @@ pub fn parse_and_execute<
             format!("Part1: {part1}, Part2: {part2} (timings: parse={parse_time:?}, part1={part1_time:?}, part2={part2_time:?})")
         }
         Err(failed) => {
-            output.critical(format_args!("Parsing failed for {}: {}", input, failed));
+            output.critical(format_args!("Parsing failed for {}: {}", String::from_utf8_lossy(input), failed));
             format!("ERROR: {}", failed)
         }
     }
@@ -89,10 +89,10 @@ impl Display for SimpleError {
 
 impl Error for SimpleError {}
 
-const fn nom_byte_parsed<'i, ParseResult: 'i, NomFunc: FnOnce(&'i [u8]) -> IResult<&'i[u8], ParseResult>>(
+const fn nom_parsed_bytes<'i, ParseResult: 'i, NomFunc: FnOnce(&'i [u8]) -> IResult<&'i[u8], ParseResult>>(
     nom_handler: NomFunc
-) -> impl FnOnce(&'i str) -> Result<ParseResult, SimpleError> {
-    |input| match nom_handler(input.as_bytes()) {
+) -> impl FnOnce(&'i [u8]) -> Result<ParseResult, SimpleError> {
+    |input| match nom_handler(input) {
         Ok((tail, parsed)) if tail.len() <= 1 => {
             if tail.is_empty() ||  tail[0] == b'\n' {
                 Ok(parsed)
@@ -109,11 +109,12 @@ const fn nom_byte_parsed<'i, ParseResult: 'i, NomFunc: FnOnce(&'i [u8]) -> IResu
     }
 }
 
-const fn nom_parsed<'i, ParseResult: 'i, NomFunc: FnOnce(&'i str) -> IResult<&'i str, ParseResult>>(
+const fn nom_parsed_str<'i, ParseResult: 'i, NomFunc: for <'tmp> FnOnce(&'tmp str) -> IResult<&'tmp str, ParseResult>>(
     nom_handler: NomFunc
-) -> impl FnOnce(&'i str) -> Result<ParseResult, SimpleError> {
+) -> impl FnOnce(&'i [u8]) -> Result<ParseResult, SimpleError> {
     |input| {
-        match nom_handler(input) {
+        let string = String::from_utf8_lossy(input);
+        match nom_handler(&string) {
             Ok((tail, parsed)) if tail.trim().is_empty() => {
                 Ok(parsed)
             }
@@ -152,7 +153,7 @@ const fn nom_parsed<'i, ParseResult: 'i, NomFunc: FnOnce(&'i str) -> IResult<&'i
     (| $name:ident, $out:ident | $body:expr ) => {
 
         pub const fn register<T: std::io::Write>() -> Option<crate::day::Day<T>> {
-            fn solve_trampoline<T: std::io::Write, UI: crate::ui::UIWrite>($name: &str, writer: &mut T) {
+            fn solve_trampoline<T: std::io::Write, UI: crate::ui::UIWrite>($name: &[u8], writer: &mut T) {
                 use crate::ui::UIWrite;
                 let mut $out = UI::create(writer, module_path!());
 

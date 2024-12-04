@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use nom::IResult;
 use crate::*;
-use crate::day::{nom_byte_parsed};
+use crate::day::{nom_parsed_bytes};
 use crate::parse_helpers::{parse_unsigned_nr_bytes};
 
 fn parse(mut input: &[u8]) -> IResult<&[u8], (Vec<i32>, Vec<i32>)> {
@@ -21,7 +21,7 @@ fn parse(mut input: &[u8]) -> IResult<&[u8], (Vec<i32>, Vec<i32>)> {
     Ok((&[], (v1, v2)))
 }
 
-parsed_day!(nom_byte_parsed(parse),
+parsed_day!(nom_parsed_bytes(parse),
     |(a, b)|{
         a.sort();
         b.sort();

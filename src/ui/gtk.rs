@@ -9,6 +9,7 @@ use gtk4::prelude::*;
 
 use std::sync::mpsc::{channel, Receiver, Sender, TryRecvError};
 use std::time::Duration;
+use nom::AsBytes;
 use crate::Configuration;
 use crate::day::{Day, handlers};
 
@@ -54,7 +55,7 @@ fn build_input_stack_pages(input_source: &Configuration) -> (LayoutBox, StackSid
 
     for d in HANDLERS.iter().enumerate() {
         if let (idx, Some(_)) = d {
-            let input_editor = build_input_editor(&input_source.load_input((idx + 1) as u8));
+            let input_editor = build_input_editor(&String::from_utf8(input_source.load_input((idx + 1) as u8)).unwrap());
             let name = format!("day_{}", idx);
             let label = format!("Day {}", idx + 1);
             stack.add_titled(&input_editor, Some(&name), &label);
@@ -133,9 +134,9 @@ fn perform_run(text: TextBuffer, grid: Grid, sidebar: StackSidebar, verbose: Che
         let mut wrapper = WrapSender(sender.clone(), Vec::new());
         run_on_worker(move || {
             if run_verbose {
-                verbose(&input, &mut wrapper)
+                verbose(input.as_bytes(), &mut wrapper)
             } else {
-                terse(&input, &mut wrapper)
+                terse(input.as_bytes(), &mut wrapper)
             }
         });
     }

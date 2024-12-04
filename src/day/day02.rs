@@ -12,7 +12,7 @@ parsed_day!(
         let mut candidates = Vec::new();
 
         let mut acc = 0;
-        for b in input.as_bytes() {
+        for b in input {
             let b = *b;
             match b {
                 b'0'..=b'9' => {

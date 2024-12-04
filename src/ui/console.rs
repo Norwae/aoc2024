@@ -23,10 +23,10 @@ pub fn console_run(config: Configuration) -> ExitCode {
     ExitCode::SUCCESS
 }
 
-fn execute_day_handler(day: u8, function: fn(&str, &mut Vec<u8>), input: String) -> OptimizedOutput {
+fn execute_day_handler(day: u8, day_handler_function: fn(&[u8], &mut Vec<u8>), input: Vec<u8>) -> OptimizedOutput {
     let mut output_buffer = Vec::new();
     let start = Instant::now();
-    function(&input, &mut output_buffer);
+    day_handler_function(&input, &mut output_buffer);
     let timing = Instant::now() - start;
     OptimizedOutput {
         day,
