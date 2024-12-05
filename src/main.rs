@@ -4,7 +4,7 @@ extern crate core;
 mod ui;
 mod day;
 mod worker;
-mod vec2d;
+mod collections;
 
 mod timed;
 

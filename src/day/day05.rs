@@ -5,6 +5,7 @@ use nom::IResult;
 use nom::multi::{many1, separated_list1};
 use nom::sequence::{separated_pair, terminated};
 use crate::*;
+use crate::collections::IndexMap;
 use crate::day::nom_parsed_bytes;
 use crate::parse_helpers::parse_unsigned_nr_bytes;
 
@@ -27,34 +28,24 @@ fn parse_pagelist(input: &[u8]) -> IResult<&[u8], Vec<u8>> {
 }
 
 fn build_token_ordering(tokens: &[u8], rules: &[Constraint]) -> TokenOrdering {
-    let mut build = [const { None::<Vec<u8>> }; 100];
+    let mut build = IndexMap::<Vec<u8>, 100>::new();
     let mut order = Vec::new();
     for constraint in rules {
         if tokens.contains(&constraint.left) && tokens.contains(&constraint.right) {
-            let left = &mut build[constraint.left as usize];
-            let left = left.get_or_insert_default();
+            let left = build.get_or_insert_default(constraint.left as usize);
             left.push(constraint.right);
-            let right = &mut build[constraint.right as usize];
-            right.get_or_insert_default();
+            build.get_or_insert_default(constraint.right as usize);
         }
     }
 
-    while !build.iter().all(|it| it.is_none()) {
-        let idx = build.iter().enumerate().find_map(|(k, v)| {
-            if let Some(v) = v {
-                if v.is_empty() {
-                    return Some(k);
-                }
-            }
-            None
+    while !build.is_empty() {
+        let idx = build.iter().find_map(|(k, v)| {
+            if v.is_empty() { Some(k) } else { None }
         }).expect("No circularity allowed");
-        build[idx] = None;
-        for values in build.iter_mut() {
-            if let Some(list) = values {
-                if let Some(idx) = list.iter().position(|v| *v as usize == idx) {
-                    list.remove(idx);
-                }
-            }
+        build.remove(idx);
+        for values in build.values_iter_mut() {
+            let position_in_vec = values.iter().position(|it|*it as usize == idx).unwrap();
+            values.remove(position_in_vec);
         }
         order.push(idx);
     }
