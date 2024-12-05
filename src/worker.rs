@@ -1,14 +1,14 @@
 use std::sync::mpsc::{channel, sync_channel};
 use lazy_static::lazy_static;
 use threadpool::ThreadPool;
-use crate::timed::{time_span_to_bin, ALL_WORK};
+use crate::timed::work;
 
 lazy_static! {
     static ref THREADPOOL: ThreadPool = threadpool::Builder::new().build();
 }
 
 pub fn run_on_worker(function: impl FnOnce() + Send + 'static) {
-    (*THREADPOOL).execute(||time_span_to_bin(ALL_WORK,function))
+    (*THREADPOOL).execute(||work(function))
 }
 
 pub fn parallelize_ordered<F, R, I>(tasks: I) -> Vec<R>

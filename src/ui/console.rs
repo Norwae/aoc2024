@@ -3,7 +3,7 @@ use std::process::ExitCode;
 use std::time::{Duration, Instant};
 use crate::Configuration;
 use crate::day::{Day, handlers};
-use crate::timed::{bin_duration, time_span, ALL_WORK};
+use crate::timed::{time_span, work_duration};
 use crate::worker::parallelize_ordered;
 
 
@@ -67,7 +67,7 @@ pub fn optimized_run(config: Configuration) -> ExitCode {
     }
 
     let clock_duration = Instant::now() - clock_start;
-    let total_duration = bin_duration(ALL_WORK);
+    let total_duration = work_duration();
 
     println!("Overall run complete.
 Wall time: {clock_duration:?}
