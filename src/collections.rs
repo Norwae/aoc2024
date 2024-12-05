@@ -47,7 +47,7 @@ impl<T, const N: usize> IndexMap<T, N> {
 
 impl<T: Default, const N: usize> IndexMap<T, N> {
     pub fn get_or_insert_default(&mut self, n: usize) -> &mut T {
-        let mut stored = &mut self.storage[n];
+        let stored = &mut self.storage[n];
         if stored.is_none() {
             self.mappings += 1;
         }
@@ -72,7 +72,7 @@ impl<T, const N: usize> ArraySet<T, N> {
         self.empty_slot == 0
     }
 
-    pub fn push(&mut self, elem: T) {
+    pub fn insert(&mut self, elem: T) {
         let slot = self.empty_slot;
         self.empty_slot += 1;
         self.storage[slot] = elem

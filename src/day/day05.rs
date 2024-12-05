@@ -33,7 +33,7 @@ fn build_token_ordering(tokens: &[u8], rules: &[Constraint]) -> TokenOrdering {
     for constraint in rules {
         if tokens.contains(&constraint.left) && tokens.contains(&constraint.right) {
             let left = build.get_or_insert_default(constraint.left as usize);
-            left.push(constraint.right);
+            left.insert(constraint.right);
             build.get_or_insert_default(constraint.right as usize);
         }
     }
