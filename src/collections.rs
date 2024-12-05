@@ -54,3 +54,36 @@ impl<T: Default, const N: usize> IndexMap<T, N> {
         stored.get_or_insert_default()
     }
 }
+
+#[derive(Debug)]
+pub struct ArraySet<T, const N: usize> {
+    storage: [T; N],
+    empty_slot: usize,
+}
+
+impl<T: Default, const N: usize> Default for ArraySet<T, N> {
+    fn default() -> Self {
+        Self { storage: array::from_fn(|_| T::default()), empty_slot: 0 }
+    }
+}
+
+impl<T, const N: usize> ArraySet<T, N> {
+    pub fn is_empty(&self) -> bool {
+        self.empty_slot == 0
+    }
+
+    pub fn push(&mut self, elem: T) {
+        let slot = self.empty_slot;
+        self.empty_slot += 1;
+        self.storage[slot] = elem
+    }
+}
+
+impl<T: Eq, const N: usize> ArraySet<T, N> {
+    pub fn remove(&mut self, value: &T) {
+        if let Some(idx) = self.storage[0..self.empty_slot].iter().position(|it|it == value) {
+            self.storage.swap(idx, self.empty_slot - 1);
+            self.empty_slot -= 1;
+        }
+    }
+}

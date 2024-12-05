@@ -5,7 +5,7 @@ use nom::IResult;
 use nom::multi::{many1, separated_list1};
 use nom::sequence::{separated_pair, terminated};
 use crate::*;
-use crate::collections::IndexMap;
+use crate::collections::{ArraySet, IndexMap};
 use crate::day::nom_parsed_bytes;
 use crate::parse_helpers::parse_unsigned_nr_bytes;
 
@@ -28,7 +28,7 @@ fn parse_pagelist(input: &[u8]) -> IResult<&[u8], Vec<u8>> {
 }
 
 fn build_token_ordering(tokens: &[u8], rules: &[Constraint]) -> TokenOrdering {
-    let mut build = IndexMap::<Vec<u8>, 100>::new();
+    let mut build = IndexMap::<ArraySet<u8, 32>, 100>::new();
     let mut order = Vec::new();
     for constraint in rules {
         if tokens.contains(&constraint.left) && tokens.contains(&constraint.right) {
@@ -44,8 +44,7 @@ fn build_token_ordering(tokens: &[u8], rules: &[Constraint]) -> TokenOrdering {
         }).expect("No circularity allowed");
         build.remove(idx);
         for values in build.values_iter_mut() {
-            let position_in_vec = values.iter().position(|it|*it as usize == idx).unwrap();
-            values.remove(position_in_vec);
+            values.remove(&(idx as u8));
         }
         order.push(idx);
     }
