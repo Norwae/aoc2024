@@ -1,6 +1,7 @@
 use std::error::Error;
 use std::fmt::{Display, Formatter};
 use std::io::Write;
+use nom::combinator::complete;
 use nom::IResult;
 use crate::ui::UIWrite;
 use crate::timed::time_span;
@@ -89,19 +90,12 @@ impl Display for SimpleError {
 
 impl Error for SimpleError {}
 
-const fn nom_parsed_bytes<'i, ParseResult: 'i, NomFunc: FnOnce(&'i [u8]) -> IResult<&'i[u8], ParseResult>>(
+const fn nom_parsed_bytes<'i, ParseResult: 'i, NomFunc: FnMut(&'i [u8]) -> IResult<&'i[u8], ParseResult>>(
     nom_handler: NomFunc
 ) -> impl FnOnce(&'i [u8]) -> Result<ParseResult, SimpleError> {
-    |input| match nom_handler(input) {
-        Ok((tail, parsed)) if tail.len() <= 1 => {
-            if tail.is_empty() ||  tail[0] == b'\n' {
+    |input| match complete(nom_handler)(input) {
+        Ok((_, parsed)) => {
                 Ok(parsed)
-            } else {
-                Err(SimpleError(format!("Incomplete parse: {}", String::from_utf8_lossy(tail))))
-            }
-        }
-        Ok((rest, _)) => {
-            Err(SimpleError(format!("Incomplete parse: {}", String::from_utf8_lossy(rest))))
         }
         Err(e) => {
             Err(SimpleError(format!("{e}")))
