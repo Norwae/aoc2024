@@ -1,13 +1,14 @@
 use std::sync::mpsc::{channel, sync_channel};
 use lazy_static::lazy_static;
 use threadpool::ThreadPool;
+use crate::timed::{time_span_to_bin, ALL_WORK};
 
 lazy_static! {
     static ref THREADPOOL: ThreadPool = threadpool::Builder::new().build();
 }
 
 pub fn run_on_worker(function: impl FnOnce() + Send + 'static) {
-    (*THREADPOOL).execute(function)
+    (*THREADPOOL).execute(||time_span_to_bin(ALL_WORK,function))
 }
 
 pub fn parallelize_ordered<F, R, I>(tasks: I) -> Vec<R>
@@ -106,10 +107,6 @@ mod test {
         }
     }
     impl UIWrite for NoUI {
-        fn create<T: Write>(_out: &mut T, _prefix: &'static str) -> impl UIWrite {
-            NoUI
-        }
-
         fn info(&mut self, _fmt: Arguments<'_>) {}
 
         fn critical(&mut self, _fmt: Arguments<'_>) {}

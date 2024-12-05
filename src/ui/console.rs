@@ -3,7 +3,7 @@ use std::process::ExitCode;
 use std::time::{Duration, Instant};
 use crate::Configuration;
 use crate::day::{Day, handlers};
-use crate::timed::time_span;
+use crate::timed::{bin_duration, time_span, ALL_WORK};
 use crate::worker::parallelize_ordered;
 
 
@@ -36,8 +36,8 @@ fn execute_day_handler(day: u8, day_handler_function: fn(&[u8], &mut Vec<u8>), i
 
 struct OptimizedOutput {
     day: u8,
-    output_buffer: Vec<u8>,
     timing: Duration,
+    output_buffer: Vec<u8>,
 }
 
 pub fn optimized_run(config: Configuration) -> ExitCode {
@@ -58,17 +58,16 @@ pub fn optimized_run(config: Configuration) -> ExitCode {
             None
         }
     });
-    let mut total_duration = Duration::ZERO;
     let mut overall_output = String::new();
     let mut day_eval_timings = String::new();
     let results = parallelize_ordered(tasks);
     for OptimizedOutput {day, timing, output_buffer} in results {
-        total_duration += timing;
         overall_output += &String::from_utf8(output_buffer).expect("Valid utf8");
         day_eval_timings += &format!("Day {day}: {timing:?}\n")
     }
 
     let clock_duration = Instant::now() - clock_start;
+    let total_duration = bin_duration(ALL_WORK);
 
     println!("Overall run complete.
 Wall time: {clock_duration:?}
