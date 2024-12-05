@@ -1,3 +1,4 @@
+use std::mem::swap;
 use nom::bytes::complete::tag;
 use nom::character::complete::line_ending;
 use nom::combinator::map;
@@ -8,7 +9,9 @@ use crate::*;
 use crate::collections::{ArraySet, IndexMap};
 use crate::day::nom_parsed_bytes;
 use crate::parse_helpers::parse_unsigned_nr_bytes;
+use crate::worker::parallelize;
 
+#[derive(Clone)]
 struct Constraint {
     left: u8,
     right: u8,
@@ -57,16 +60,33 @@ fn build_token_ordering(tokens: &[u8], rules: &[Constraint]) -> TokenOrdering {
     TokenOrdering { lookup_positions }
 }
 
-fn part1((constraints, token_lists): &(Vec<Constraint>, Vec<Vec<u8>>)) -> String {
-    let mut sum_1 = 0u32;
-    let mut sum_2 = 0u32;
-    for page_list in token_lists {
-        let constraint = build_token_ordering(&page_list, constraints);
-        let mut clone = page_list.clone();
-        clone.sort_by(|l, r| constraint.lookup_positions[*l as usize].cmp(&constraint.lookup_positions[*r as usize]));
-        let mid = clone[clone.len() / 2];
-        let target = if &clone == page_list { &mut sum_1 } else { &mut sum_2 };
-        *target += mid as u32;
+fn part1((constraints, token_lists): &mut (Vec<Constraint>, Vec<Vec<u8>>)) -> String {
+    let mut sum_1 = 0i32;
+    let mut sum_2 = 0i32;
+    let mut owned_lists = Vec::new();
+    swap(&mut owned_lists, token_lists);
+
+    let tasks = owned_lists.into_iter().map(|l|{
+        let constraints = constraints.clone();
+        move ||{
+            let constraint = build_token_ordering(&l, &constraints);
+            let mut clone = l.clone();
+            clone.sort_by(|l, r| constraint.lookup_positions[*l as usize].cmp(&constraint.lookup_positions[*r as usize]));
+            let mid = clone[clone.len() / 2] as i32;
+            if clone != l {
+                -mid
+            } else {
+                mid
+            }
+        }
+    });
+
+    for result in parallelize(tasks) {
+        if result < 0 {
+            sum_2 -= result;
+        } else {
+            sum_1 += result;
+        }
     }
 
     format!("Part 1: {sum_1}, Part 2: {sum_2}")
@@ -74,6 +94,6 @@ fn part1((constraints, token_lists): &(Vec<Constraint>, Vec<Vec<u8>>)) -> String
 
 parsed_day!(
     nom_parsed_bytes(separated_pair(many1(parse_constraints), line_ending, many1(parse_pagelist))),
-    |i|part1(i),
+    part1,
     |_|"<see before>"
 );
