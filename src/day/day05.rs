@@ -9,7 +9,7 @@ use nom::sequence::{separated_pair, terminated};
 use crate::*;
 use crate::day::nom_parsed_bytes;
 use crate::parse_helpers::parse_unsigned_nr_bytes;
-
+use crate::timed::time_span;
 
 struct Constraint {
     left: u8,
@@ -56,26 +56,36 @@ fn parse_pagelist(input: &[u8]) -> IResult<&[u8], Vec<u8>> {
 }
 
 fn build_token_ordering(tokens: &[u8], rules: &[Constraint]) -> TokenOrdering {
-    let mut build = HashMap::<u8, HashSet<u8>>::new();
+    let mut build = [const { None::<Vec<u8>> }; 100];
     let mut order = Vec::new();
     for constraint in rules {
         if tokens.contains(&constraint.left) && tokens.contains(&constraint.right) {
-            build.entry(constraint.left).or_default().insert(constraint.right);
-            build.entry(constraint.right).or_default();
+            let left = &mut build[constraint.left as usize];
+            let left = left.get_or_insert_default();
+            left.push(constraint.right);
+            let right = &mut build[constraint.right as usize];
+            right.get_or_insert_default();
         }
     }
 
-    while !build.is_empty() {
-        let maximum_key = build.iter().find_map(|(k, v)| if v.is_empty() {
-            Some(*k)
-        } else {
+    while !build.iter().all(|it| it.is_none()) {
+        let idx = build.iter().enumerate().find_map(|(k, v)| {
+            if let Some(v) = v {
+                if v.is_empty() {
+                    return Some(k);
+                }
+            }
             None
         }).expect("No circularity allowed");
-        build.remove(&maximum_key);
-        for value in build.values_mut() {
-            value.remove(&maximum_key);
+        build[idx] = None;
+        for values in build.iter_mut() {
+            if let Some(list) = values {
+                if let Some(idx) = list.iter().position(|v| *v as usize == idx) {
+                    list.remove(idx);
+                }
+            }
         }
-        order.push(maximum_key);
+        order.push(idx);
     }
     order.reverse();
     let mut lookup_positions = [usize::MAX; 100];
@@ -109,7 +119,7 @@ fn part1(input: &mut Day5) -> u32 {
 }
 
 fn part2(input: Day5) -> u32 {
-    let Day5 { token_lists, token_orderings_per_input, ..} = input;
+    let Day5 { token_lists, token_orderings_per_input, .. } = input;
     let mut sum = 0;
     for (mut list, ordering) in token_lists.into_iter().zip(token_orderings_per_input.into_iter()) {
         list.sort_by(|x, y| ordering.lookup_positions[*x as usize].cmp(&ordering.lookup_positions[*y as usize]));
