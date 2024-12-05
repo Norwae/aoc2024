@@ -1,6 +1,4 @@
-use nom::character::complete::u32;
 use crate::*;
-use crate::vec2d::Index2D;
 
 const XMAS: &'static [u8;4] = b"XMAS";
 const SAMX: &'static [u8;4] = b"SAMX";

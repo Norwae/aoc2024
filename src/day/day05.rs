@@ -1,4 +1,3 @@
-use std::collections::{HashMap, HashSet};
 use std::mem::swap;
 use nom::bytes::complete::tag;
 use nom::character::complete::line_ending;
@@ -9,7 +8,6 @@ use nom::sequence::{separated_pair, terminated};
 use crate::*;
 use crate::day::nom_parsed_bytes;
 use crate::parse_helpers::parse_unsigned_nr_bytes;
-use crate::timed::time_span;
 
 struct Constraint {
     left: u8,
@@ -23,28 +21,6 @@ struct TokenOrdering {
 struct Day5 {
     constraints: Vec<Constraint>,
     token_lists: Vec<Vec<u8>>,
-    token_orderings_per_input: Vec<TokenOrdering>,
-}
-
-impl Constraint {
-    fn validate(&self, pages: &[u8]) -> Option<(usize, usize)> {
-        let mut seenRight = usize::MAX;
-
-        for i in 0..pages.len() {
-            let p = pages[i];
-            if p == self.left {
-                if seenRight != usize::MAX {
-                    return Some((i, seenRight));
-                }
-            }
-
-            if p == self.right {
-                seenRight = i;
-            }
-        }
-
-        None
-    }
 }
 
 fn parse_constraints(input: &[u8]) -> IResult<&[u8], Constraint> {
@@ -96,43 +72,28 @@ fn build_token_ordering(tokens: &[u8], rules: &[Constraint]) -> TokenOrdering {
     TokenOrdering { lookup_positions }
 }
 
-fn part1(input: &mut Day5) -> u32 {
-    let Day5 { constraints, token_lists, token_orderings_per_input } = input;
+fn part1(input: &mut Day5) -> String {
+    let Day5 { constraints, token_lists} = input;
     let mut tmp = Vec::new();
     swap(&mut tmp, token_lists);
-    let mut sum = 0;
-    'page_list: for page_list in tmp {
+    let mut sum_1 = 0u32;
+    let mut sum_2 = 0u32;
+    for page_list in tmp {
         let constraint = build_token_ordering(&page_list, constraints);
-        for page_nr in page_list.windows(2) {
-            let [l, r] = page_nr else { panic!("windows() is broken") };
-            if constraint.lookup_positions[*l as usize] > constraint.lookup_positions[*r as usize] {
-                token_lists.push(page_list);
-                token_orderings_per_input.push(constraint);
-                continue 'page_list;
-            }
-        }
-
-        sum += page_list[page_list.len() / 2] as u32
+        let mut clone = page_list.clone();
+        clone.sort_by(|l, r| constraint.lookup_positions[*l as usize].cmp(&constraint.lookup_positions[*r as usize]));
+        let mid = clone[clone.len() / 2];
+        let target = if clone == page_list { &mut sum_1 } else { &mut sum_2 };
+        *target += mid as u32;
     }
 
-    sum
-}
-
-fn part2(input: Day5) -> u32 {
-    let Day5 { token_lists, token_orderings_per_input, .. } = input;
-    let mut sum = 0;
-    for (mut list, ordering) in token_lists.into_iter().zip(token_orderings_per_input.into_iter()) {
-        list.sort_by(|x, y| ordering.lookup_positions[*x as usize].cmp(&ordering.lookup_positions[*y as usize]));
-        sum += list[list.len() / 2] as u32;
-    }
-
-    sum
+    format!("Part 1: {sum_1}, Part 2: {sum_2}")
 }
 
 parsed_day!(
     nom_parsed_bytes(map(separated_pair(many1(parse_constraints), line_ending, many1(parse_pagelist)), |(constraints,token_lists)|{
-        Day5 { constraints, token_lists, token_orderings_per_input: Vec::new()}
+        Day5 { constraints, token_lists }
     })),
     |i|part1(i),
-    part2
+    |_|"<see before>"
 );
