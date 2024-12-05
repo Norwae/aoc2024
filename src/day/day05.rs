@@ -1,4 +1,3 @@
-use std::mem::swap;
 use nom::bytes::complete::tag;
 use nom::character::complete::line_ending;
 use nom::combinator::map;
@@ -17,10 +16,6 @@ struct Constraint {
 
 struct TokenOrdering {
     lookup_positions: [usize; 100],
-}
-struct Day5 {
-    constraints: Vec<Constraint>,
-    token_lists: Vec<Vec<u8>>,
 }
 
 fn parse_constraints(input: &[u8]) -> IResult<&[u8], Constraint> {
@@ -66,24 +61,21 @@ fn build_token_ordering(tokens: &[u8], rules: &[Constraint]) -> TokenOrdering {
     order.reverse();
     let mut lookup_positions = [usize::MAX; 100];
     for (idx, v) in order.iter().enumerate() {
-        lookup_positions[*v as usize] = idx;
+        lookup_positions[*v] = idx;
     }
 
     TokenOrdering { lookup_positions }
 }
 
-fn part1(input: &mut Day5) -> String {
-    let Day5 { constraints, token_lists} = input;
-    let mut tmp = Vec::new();
-    swap(&mut tmp, token_lists);
+fn part1((constraints, token_lists): &(Vec<Constraint>, Vec<Vec<u8>>)) -> String {
     let mut sum_1 = 0u32;
     let mut sum_2 = 0u32;
-    for page_list in tmp {
+    for page_list in token_lists {
         let constraint = build_token_ordering(&page_list, constraints);
         let mut clone = page_list.clone();
         clone.sort_by(|l, r| constraint.lookup_positions[*l as usize].cmp(&constraint.lookup_positions[*r as usize]));
         let mid = clone[clone.len() / 2];
-        let target = if clone == page_list { &mut sum_1 } else { &mut sum_2 };
+        let target = if &clone == page_list { &mut sum_1 } else { &mut sum_2 };
         *target += mid as u32;
     }
 
@@ -91,9 +83,7 @@ fn part1(input: &mut Day5) -> String {
 }
 
 parsed_day!(
-    nom_parsed_bytes(map(separated_pair(many1(parse_constraints), line_ending, many1(parse_pagelist)), |(constraints,token_lists)|{
-        Day5 { constraints, token_lists }
-    })),
+    nom_parsed_bytes(separated_pair(many1(parse_constraints), line_ending, many1(parse_pagelist))),
     |i|part1(i),
     |_|"<see before>"
 );
