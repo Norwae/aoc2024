@@ -3,6 +3,7 @@ use std::fmt::{Display, Formatter};
 use std::io::Write;
 use nom::combinator::complete;
 use nom::IResult;
+use crate::collections::Index2D;
 use crate::ui::UIWrite;
 use crate::timed::time_span;
 
@@ -90,6 +91,26 @@ impl Display for SimpleError {
 
 impl Error for SimpleError {}
 
+pub fn parse_graphical_input(input: &[u8], mut handler: impl FnMut(u8, Index2D)){
+    let mut index = Index2D::default();
+    for byte in input {
+        let byte = *byte;
+
+        match byte {
+            b'.' | b'\r' => (),
+            b'\n' => {
+                index.row += 1;
+                index.column = 0;
+                continue;
+            }
+            other => {
+                handler(other, index)
+            }
+        }
+        index.column += 1;
+    }
+}
+
 const fn nom_parsed_bytes<'i, ParseResult: 'i, NomFunc: FnMut(&'i [u8]) -> IResult<&'i[u8], ParseResult>>(
     nom_handler: NomFunc
 ) -> impl FnOnce(&'i [u8]) -> Result<ParseResult, SimpleError> {
@@ -105,10 +126,10 @@ const fn nom_parsed_bytes<'i, ParseResult: 'i, NomFunc: FnMut(&'i [u8]) -> IResu
 
 #[macro_export] macro_rules! parsed_day {
     ($parse:expr) => {
-        parsed_day!($parse, |_|"UNIMPLEMENTED Part 1");
+        parsed_day!($parse, |_|"UNIMPLEMENTED", |x|format!("Parse result was {x:?}"));
     };
     ($parse:expr, $part1:expr) => {
-        parsed_day!($parse, $part1, |_|"UNIMPLEMENTED Part 2");
+        parsed_day!($parse, |_|"---", $part1);
     };
     ($parse:expr, $part1:expr, $part2:expr) => {
         simple_day!(|i, o|crate::day::parse_and_execute($parse, $part1, $part2, i, &mut o));

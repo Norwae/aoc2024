@@ -1,4 +1,4 @@
-use std::mem::swap;
+use std::sync::Arc;
 use nom::bytes::complete::tag;
 use nom::character::complete::line_ending;
 use nom::combinator::map;
@@ -6,7 +6,7 @@ use nom::IResult;
 use nom::multi::{many1, separated_list1};
 use nom::sequence::{separated_pair, terminated};
 use crate::*;
-use crate::collections::{ArraySet, IndexMap};
+use crate::collections::{ArrayBag, IndexMap};
 use crate::day::nom_parsed_bytes;
 use crate::parse_helpers::parse_unsigned_nr_bytes;
 use crate::worker::parallelize;
@@ -31,7 +31,7 @@ fn parse_pagelist(input: &[u8]) -> IResult<&[u8], Vec<u8>> {
 }
 
 fn build_token_ordering(tokens: &[u8], rules: &[Constraint]) -> TokenOrdering {
-    let mut build = IndexMap::<ArraySet<u8, 32>, 100>::new();
+    let mut build = IndexMap::<ArrayBag<u8, 32>, 100>::new();
     let mut order = Vec::new();
     for constraint in rules {
         if tokens.contains(&constraint.left) && tokens.contains(&constraint.right) {
@@ -60,13 +60,13 @@ fn build_token_ordering(tokens: &[u8], rules: &[Constraint]) -> TokenOrdering {
     TokenOrdering { lookup_positions }
 }
 
-fn part1((constraints, token_lists): &mut (Vec<Constraint>, Vec<Vec<u8>>)) -> String {
+fn part1((constraints, token_lists):  (Vec<Constraint>, Vec<Vec<u8>>)) -> String {
     let mut sum_1 = 0i32;
     let mut sum_2 = 0i32;
-    let mut owned_lists = Vec::new();
-    swap(&mut owned_lists, token_lists);
 
-    let tasks = owned_lists.into_iter().map(|l|{
+    let constraints = Arc::new(constraints);
+
+    let tasks = token_lists.into_iter().map(|l|{
         let constraints = constraints.clone();
         move ||{
             let constraint = build_token_ordering(&l, &constraints);
@@ -89,11 +89,10 @@ fn part1((constraints, token_lists): &mut (Vec<Constraint>, Vec<Vec<u8>>)) -> St
         }
     }
 
-    format!("Part 1: {sum_1}, Part 2: {sum_2}")
+    format!("{sum_1} / {sum_2}")
 }
 
 parsed_day!(
     nom_parsed_bytes(separated_pair(many1(parse_constraints), line_ending, many1(parse_pagelist))),
-    part1,
-    |_|"<see before>"
+    part1
 );
