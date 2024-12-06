@@ -1,4 +1,5 @@
 #![feature(never_type)]
+#![feature(maybe_uninit_slice)]
 extern crate core;
 
 mod ui;

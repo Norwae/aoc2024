@@ -1,5 +1,6 @@
 use std::array;
-use std::ops::{Add, AddAssign};
+use std::mem::MaybeUninit;
+use std::ops::{Add, AddAssign, Sub, SubAssign};
 
 #[derive(Debug, Clone)]
 pub struct IndexMap<T, const N: usize> {
@@ -46,6 +47,9 @@ impl<T, const N: usize> IndexMap<T, N> {
     }
 
     pub fn get(&self, index: usize) -> Option<&T> {
+        if index >= N {
+            panic!("Out of bounds!")
+        }
         self.storage[index].as_ref()
     }
 
@@ -71,19 +75,23 @@ impl<T: Default, const N: usize> IndexMap<T, N> {
 
 #[derive(Debug)]
 pub struct ArrayBag<T, const N: usize> {
-    storage: [T; N],
+    storage: [MaybeUninit<T>; N],
     empty_slot: usize,
 }
 
-impl<T: Default, const N: usize> Default for ArrayBag<T, N> {
+impl<T, const N: usize> Default for ArrayBag<T, N> {
     fn default() -> Self {
-        Self { storage: array::from_fn(|_| T::default()), empty_slot: 0 }
+        Self { storage: [const { MaybeUninit::uninit()}; N], empty_slot: 0 }
     }
 }
 
 impl <T, const N: usize> AsRef<[T]> for ArrayBag<T, N> {
     fn as_ref(&self) -> &[T] {
-        &self.storage[..self.empty_slot]
+        unsafe {
+            // safe - we have read access, so empty_slot cannot change, and we ensure
+            // no uninit exists past that threshold
+            MaybeUninit::slice_assume_init_ref(&self.storage[..self.empty_slot])
+        }
     }
 }
 
@@ -93,22 +101,59 @@ impl<T, const N: usize> ArrayBag<T, N> {
     }
 
     pub fn iter(&self) -> impl Iterator<Item=&T> {
-        self.storage[0..self.empty_slot].iter()
+        self.storage[0..self.empty_slot].iter().map(|i|{
+            unsafe {
+                // safe - we have read access, so empty_slot cannot change. Consequently, no
+                // chance to hit the uninitialized tail end of empty_slot and further
+                i.assume_init_ref()
+            }
+        })
     }
 
+
     pub fn insert(&mut self, elem: T) {
+        if self.empty_slot == N {
+            panic!("Overflowing limit")
+        }
         let slot = self.empty_slot;
+        self.storage[slot].write(elem);
         self.empty_slot += 1;
-        self.storage[slot] = elem
     }
 }
 
 impl<T: Eq, const N: usize> ArrayBag<T, N> {
     pub fn remove(&mut self, value: &T) {
-        if let Some(idx) = self.storage[0..self.empty_slot].iter().position(|it| it == value) {
+        if let Some(idx) = self.as_ref().iter().position(|it| it == value) {
             self.storage.swap(idx, self.empty_slot - 1);
             self.empty_slot -= 1;
+            unsafe {
+                // safe - if drop were to panic, we already decremented the count, essentially
+                // only leaking the instance
+                self.storage[self.empty_slot].assume_init_drop()
+            }
         }
+    }
+
+    pub fn insert_if_absent(&mut self, elem: T) -> bool {
+        if !self.as_ref().contains(&elem) {
+            self.insert(elem);
+            true
+        } else {
+            false
+        }
+    }
+}
+
+impl <T: Clone, const N: usize> Clone for ArrayBag<T, N> {
+    fn clone(&self) -> Self {
+        let mut container = Self::default();
+        let slice = self.as_ref();
+        for slot in 0..self.empty_slot {
+            container.storage[slot].write(slice[slot].clone());
+            container.empty_slot += 1;
+        }
+
+        container
     }
 }
 
@@ -196,9 +241,23 @@ impl Add<CompassDirection> for Index2D {
     }
 }
 
+impl Sub<CompassDirection> for Index2D {
+    type Output = Index2D;
+
+    fn sub(self, rhs: CompassDirection) -> Self::Output {
+        self.move_by(1, rhs.turn_right().turn_right())
+    }
+}
+
 impl AddAssign<CompassDirection> for Index2D {
     fn add_assign(&mut self, rhs: CompassDirection) {
         *self = self.move_by(1, rhs)
+    }
+}
+
+impl SubAssign<CompassDirection> for Index2D {
+    fn sub_assign(&mut self, rhs: CompassDirection) {
+        *self = *self - rhs
     }
 }
 
