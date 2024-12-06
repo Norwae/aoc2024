@@ -1,6 +1,5 @@
 use std::array;
-use std::mem::swap;
-use std::ops::{Add, AddAssign, Index, IndexMut, Mul};
+use std::ops::{Add, AddAssign};
 
 #[derive(Debug, Clone)]
 pub struct IndexMap<T, const N: usize> {
@@ -192,7 +191,7 @@ impl AddAssign for Index2D {
 impl Add<CompassDirection> for Index2D {
     type Output = Index2D;
 
-    fn add(mut self, rhs: CompassDirection) -> Self::Output {
+    fn add(self, rhs: CompassDirection) -> Self::Output {
         self.move_by(1, rhs)
     }
 }

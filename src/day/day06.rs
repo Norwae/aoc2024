@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 use crate::*;
 use crate::collections::{ArrayBag, CompassDirection, Index2D, IndexMap};
-use crate::day::{parse_graphical_input, Day};
+use crate::day::parse_graphical_input;
 
 #[derive(Debug, Default)]
 struct Guard {
@@ -13,7 +13,6 @@ struct Guard {
 struct Day6 {
     guard: Guard,
     obstacles_per_row: IndexMap<ArrayBag<usize, 32>, 256>,
-    obstacles_per_column: IndexMap<ArrayBag<usize, 32>, 256>,
     max_row: usize,
     max_column: usize,
 }
@@ -59,7 +58,6 @@ fn parse(input: &[u8]) -> Result<Day6, !> {
             result.guard = Guard { facing: CompassDirection::NORTH, position }
         } else if byte == b'#' {
             result.obstacles_per_row.get_or_insert_default(position.row).insert(position.column);
-            result.obstacles_per_column.get_or_insert_default(position.column).insert(position.row);
         }
         result.max_row = result.max_row.max(position.row);
         result.max_column = result.max_column.max(position.column)

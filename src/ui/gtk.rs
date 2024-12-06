@@ -9,7 +9,6 @@ use gtk4::prelude::*;
 
 use std::sync::mpsc::{channel, Receiver, Sender, TryRecvError};
 use std::time::Duration;
-use nom::AsBytes;
 use crate::Configuration;
 use crate::day::{Day, handlers};
 
