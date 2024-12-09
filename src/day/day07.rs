@@ -5,7 +5,6 @@ use nom::IResult;
 use nom::multi::separated_list1;
 use nom::sequence::separated_pair;
 use crate::*;
-use crate::collections::ArrayBag;
 use crate::day::nom_parsed_bytes;
 use crate::parse_helpers::parse_unsigned_nr_bytes;
 
@@ -13,11 +12,6 @@ use crate::parse_helpers::parse_unsigned_nr_bytes;
 struct Problem {
     target_value: u64,
     operands: Vec<u64>,
-}
-
-struct Result {
-    success: bool,
-    concat_used: bool
 }
 
 fn concat(l: u64, r: u64) -> u64 {

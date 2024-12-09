@@ -1,4 +1,3 @@
-use std::array;
 use std::fmt::{Debug, Formatter};
 use std::mem::MaybeUninit;
 use std::ops::{Add, AddAssign, Sub, SubAssign};
@@ -173,7 +172,6 @@ pub enum CompassDirection {
 }
 
 impl CompassDirection {
-    pub const ALL: [CompassDirection; 4] = [CompassDirection::NORTH, CompassDirection::EAST, CompassDirection::SOUTH, CompassDirection::WEST];
 
     pub fn turn_right(self) -> Self {
         match self {
@@ -201,7 +199,6 @@ pub struct Index2D {
 
 impl Index2D {
     const IMPLAUSIBLE: Index2D = Index2D { row: usize::MAX, column: usize::MAX };
-    pub const ZERO: Index2D = Index2D { row: 0, column: 0 };
     pub fn plausible(self) -> bool {
         self.row != Self::IMPLAUSIBLE.row && self.column != Self::IMPLAUSIBLE.column
     }
@@ -221,17 +218,9 @@ impl Index2D {
 
         self
     }
-    pub fn manhattan_distance(&self, other: Index2D) -> usize {
-        let d0 = (self.row as isize).wrapping_sub(other.row as isize).abs();
-        let d1 = (self.column as isize).wrapping_sub(other.column as isize).abs();
-
-        d0.max(d1) as usize
-    }
 }
 
 impl Location2D {
-    pub const ZERO: Index2D = Index2D { row: 0, column: 0 };
-
     pub fn move_by(mut self, steps: usize, direction: CompassDirection) -> Location2D {
         let steps = steps as i64;
         match direction {
@@ -242,12 +231,6 @@ impl Location2D {
         }
 
         self
-    }
-    pub fn manhattan_distance(&self, other: Location2D) -> usize {
-        let d0 = (self.row - other.row).abs();
-        let d1 = (self.column - other.column).abs();
-
-        d0.max(d1) as usize
     }
 }
 

@@ -1,8 +1,6 @@
 use std::collections::{HashMap, HashSet};
-use std::mem::swap;
 use crate::*;
 use crate::collections::{ArrayBag, CompassDirection, Index2D, IndexMap};
-use crate::collections::CompassDirection::WEST;
 use crate::day::parse_graphical_input;
 
 #[derive(Debug, Default, Clone, Hash, Eq, PartialEq)]
