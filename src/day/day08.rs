@@ -17,27 +17,38 @@ fn parse(input: &[u8]) -> Result<Day8, !> {
     Ok(result)
 }
 
-fn part1(input: Day8) -> usize {
-    dbg!(&input);
-    let mut outputs = HashSet::<Index2D>::new();
+fn part1(input: Day8) -> String {
+    let plausible = |location: Index2D| location.plausible() &&
+        location.row <= input.terminus.row &&
+        location.column <= input.terminus.column;
+
+    let mut single_distance_outputs = HashSet::new();
+    let mut any_distance_outputs = HashSet::new();
 
     for (_, antennae) in input.locations.iter() {
         for antenna1 in antennae.as_ref() {
             for antenna2 in antennae.as_ref() {
                 if antenna1 != antenna2 {
                     let distance  = *antenna1 - *antenna2;
-                    let antinode = *antenna1 + distance;
-                    let index: Index2D = antinode.into();
+                    let single_step = *antenna1 + distance;
+                    let index: Index2D = single_step.into();
 
-                    if index.plausible() && index.row <= input.terminus.row && index.column <= input.terminus.column {
-                        outputs.insert(index);
+                    if plausible(index.into()){
+                        single_distance_outputs.insert(index);
+                    }
+
+                    let mut cursor = *antenna1;
+
+                    while plausible(cursor.into()) {
+                        any_distance_outputs.insert(cursor);
+                        cursor += distance
                     }
                 }
             }
         }
     }
 
-    outputs.len()
+    format!("{} - {}", single_distance_outputs.len(), any_distance_outputs.len())
 }
 
 parsed_day!(parse, part1);
