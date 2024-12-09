@@ -94,13 +94,27 @@ impl<T, const N: usize> AsRef<[T]> for ArrayBag<T, N> {
     fn as_ref(&self) -> &[T] {
         unsafe {
             // safe - we have read access, so empty_slot cannot change, and we ensure
-            // no uninit exists past that threshold
+            // no uninit exists past that threshold. Thus, the contract of slice_assume_init_ref is
+            // fulfilled
             MaybeUninit::slice_assume_init_ref(&self.storage[..self.empty_slot])
         }
     }
 }
 
 impl<T, const N: usize> ArrayBag<T, N> {
+
+    fn clear(&mut self) {
+        while self.empty_slot > 0 {
+            self.empty_slot -= 1;
+            unsafe {
+                // similar reasoning to remove, we first decrement
+                // to avoid a panicky destructor making us point to bad memory,
+                // then destroy the elements one by one. A smart drop like Vec might
+                // be preferable but this is safe and reasonably efficient
+                self.storage[self.empty_slot].assume_init_drop();
+            }
+        }
+    }
     pub fn is_empty(&self) -> bool {
         self.empty_slot == 0
     }
@@ -123,6 +137,12 @@ impl<T, const N: usize> ArrayBag<T, N> {
         let slot = self.empty_slot;
         self.storage[slot].write(elem);
         self.empty_slot += 1;
+    }
+}
+
+impl <T, const N: usize> Drop for ArrayBag<T, N> {
+    fn drop(&mut self) {
+        self.clear();
     }
 }
 
