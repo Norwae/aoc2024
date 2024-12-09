@@ -1,4 +1,5 @@
 use std::array;
+use std::fmt::{Debug, Formatter};
 use std::mem::MaybeUninit;
 use std::ops::{Add, AddAssign, Sub, SubAssign};
 
@@ -73,19 +74,24 @@ impl<T: Default, const N: usize> IndexMap<T, N> {
     }
 }
 
-#[derive(Debug)]
 pub struct ArrayBag<T, const N: usize> {
     storage: [MaybeUninit<T>; N],
     empty_slot: usize,
 }
 
-impl<T, const N: usize> Default for ArrayBag<T, N> {
-    fn default() -> Self {
-        Self { storage: [const { MaybeUninit::uninit()}; N], empty_slot: 0 }
+impl<T: Debug, const N: usize> Debug for ArrayBag<T, N> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!("{:?}", self.as_ref()))
     }
 }
 
-impl <T, const N: usize> AsRef<[T]> for ArrayBag<T, N> {
+impl<T, const N: usize> Default for ArrayBag<T, N> {
+    fn default() -> Self {
+        Self { storage: [const { MaybeUninit::uninit() }; N], empty_slot: 0 }
+    }
+}
+
+impl<T, const N: usize> AsRef<[T]> for ArrayBag<T, N> {
     fn as_ref(&self) -> &[T] {
         unsafe {
             // safe - we have read access, so empty_slot cannot change, and we ensure
@@ -101,7 +107,7 @@ impl<T, const N: usize> ArrayBag<T, N> {
     }
 
     pub fn iter(&self) -> impl Iterator<Item=&T> {
-        self.storage[0..self.empty_slot].iter().map(|i|{
+        self.storage[0..self.empty_slot].iter().map(|i| {
             unsafe {
                 // safe - we have read access, so empty_slot cannot change. Consequently, no
                 // chance to hit the uninitialized tail end of empty_slot and further
@@ -144,7 +150,7 @@ impl<T: Eq, const N: usize> ArrayBag<T, N> {
     }
 }
 
-impl <T: Clone, const N: usize> Clone for ArrayBag<T, N> {
+impl<T: Clone, const N: usize> Clone for ArrayBag<T, N> {
     fn clone(&self) -> Self {
         let mut container = Self::default();
         let slice = self.as_ref();
@@ -179,6 +185,13 @@ impl CompassDirection {
     }
 }
 
+
+#[derive(Debug, Copy, Clone, Default, Eq, PartialEq, Hash)]
+pub struct Location2D {
+    pub row: i64,
+    pub column: i64,
+}
+
 #[derive(Debug, Copy, Clone, Default, Eq, PartialEq, Hash)]
 pub struct Index2D {
     pub row: usize,
@@ -211,6 +224,28 @@ impl Index2D {
     pub fn manhattan_distance(&self, other: Index2D) -> usize {
         let d0 = (self.row as isize).wrapping_sub(other.row as isize).abs();
         let d1 = (self.column as isize).wrapping_sub(other.column as isize).abs();
+
+        d0.max(d1) as usize
+    }
+}
+
+impl Location2D {
+    pub const ZERO: Index2D = Index2D { row: 0, column: 0 };
+
+    pub fn move_by(mut self, steps: usize, direction: CompassDirection) -> Location2D {
+        let steps = steps as i64;
+        match direction {
+            CompassDirection::NORTH => self.row -= steps ,
+            CompassDirection::EAST => self.column += steps,
+            CompassDirection::SOUTH => self.row += steps,
+            CompassDirection::WEST => self.column -= steps,
+        }
+
+        self
+    }
+    pub fn manhattan_distance(&self, other: Location2D) -> usize {
+        let d0 = (self.row - other.row).abs();
+        let d1 = (self.column - other.column).abs();
 
         d0.max(d1) as usize
     }
@@ -261,4 +296,77 @@ impl SubAssign<CompassDirection> for Index2D {
     }
 }
 
-// rest of vec2d.rs omitted for now, may be included when called for
+
+
+impl Add for Location2D {
+    type Output = Location2D;
+
+    fn add(self, rhs: Location2D) -> Self::Output {
+        Self {
+            column: self.column + rhs.column,
+            row: self.row + rhs.row,
+        }
+    }
+}
+
+impl AddAssign for Location2D {
+    fn add_assign(&mut self, rhs: Self) {
+        *self = *self + rhs
+    }
+}
+
+impl Add<CompassDirection> for Location2D {
+    type Output = Location2D;
+
+    fn add(self, rhs: CompassDirection) -> Self::Output {
+        self.move_by(1, rhs)
+    }
+}
+
+impl Sub<CompassDirection> for Location2D {
+    type Output = Location2D;
+
+    fn sub(self, rhs: CompassDirection) -> Self::Output {
+        self.move_by(1, rhs.turn_right().turn_right())
+    }
+}
+
+impl AddAssign<CompassDirection> for Location2D {
+    fn add_assign(&mut self, rhs: CompassDirection) {
+        *self = self.move_by(1, rhs)
+    }
+}
+
+impl SubAssign<CompassDirection> for Location2D {
+    fn sub_assign(&mut self, rhs: CompassDirection) {
+        *self = *self - rhs
+    }
+}
+
+impl Sub for Location2D {
+    type Output = Location2D;
+
+    fn sub(self, rhs: Self) -> Self::Output {
+        Location2D { row: self.row - rhs.row, column: self.column - rhs.column }
+    }
+}
+
+impl Into<Index2D> for Location2D {
+    fn into(self) -> Index2D {
+        if self.row >= 0 && self.column >= 0 {
+            Index2D { row: self.row as usize, column: self.column as usize}
+        } else {
+            Index2D::IMPLAUSIBLE
+        }
+    }
+}
+
+impl Into<Location2D> for Index2D {
+    fn into(self) -> Location2D {
+        if !self.plausible() {
+            panic!("Implausible cannot be resolved anymore")
+        }
+
+        Location2D { row: self.row as i64, column: self.column as i64 }
+    }
+}

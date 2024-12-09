@@ -91,14 +91,16 @@ impl Display for SimpleError {
 
 impl Error for SimpleError {}
 
-pub fn parse_graphical_input(input: &[u8], mut handler: impl FnMut(u8, Index2D)){
+pub fn parse_graphical_input(input: &[u8], mut handler: impl FnMut(u8, Index2D)) -> Index2D {
     let mut index = Index2D::default();
+    let mut max_column = 0;
     for byte in input {
         let byte = *byte;
 
         match byte {
             b'.' | b'\r' => (),
             b'\n' => {
+                max_column = max_column.max(index.column - 1);
                 index.row += 1;
                 index.column = 0;
                 continue;
@@ -108,6 +110,11 @@ pub fn parse_graphical_input(input: &[u8], mut handler: impl FnMut(u8, Index2D))
             }
         }
         index.column += 1;
+    }
+
+    Index2D {
+        row: index.row - 1,
+        column: max_column
     }
 }
 
