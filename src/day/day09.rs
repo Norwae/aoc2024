@@ -57,10 +57,10 @@ fn p1(input: &mut Vec<Span>) -> usize {
 }
 
 fn p2(mut input: Vec<Span>) -> usize {
-    let mut last = i32::MAX;
-    while let Some(candidate_index) = input.iter().rposition(|it|it.file_id > 0 && !it.moved && it.file_id < last) {
+    let mut last = input.len();
+    while let Some(candidate_index) = (&input[..last]).iter().rposition(|it|it.file_id > 0 && !it.moved) {
         let required_length = input[candidate_index].length;
-        last = input[candidate_index].file_id;
+        last = candidate_index;
 
         if let Some(insert_index) = input[0..candidate_index].iter().position(|it|it.file_id == -1 && it.length >= required_length) {
             let mut tmp = Span { file_id: -1, length: required_length, moved: true};
@@ -70,6 +70,8 @@ fn p2(mut input: Vec<Span>) -> usize {
             input[insert_index + 1].length -= required_length;
             if input[insert_index + 1].length == 0 {
                 input.remove(insert_index + 1);
+            } else {
+                last += 1;
             }
         }
     }
