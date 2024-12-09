@@ -164,7 +164,7 @@ impl<T: Clone, const N: usize> Clone for ArrayBag<T, N> {
 }
 
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq, Default)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Default, Hash)]
 pub enum CompassDirection {
     #[default] NORTH,
     EAST,

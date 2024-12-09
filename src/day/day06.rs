@@ -5,13 +5,13 @@ use crate::collections::{ArrayBag, CompassDirection, Index2D, IndexMap};
 use crate::collections::CompassDirection::WEST;
 use crate::day::parse_graphical_input;
 
-#[derive(Debug, Default, Clone)]
-struct Guard {
+#[derive(Debug, Default, Clone, Hash, Eq, PartialEq)]
+struct GuardPosition {
     facing: CompassDirection,
     position: Index2D,
 }
 
-impl Guard {
+impl GuardPosition {
     fn step(&mut self) {
         self.position += self.facing;
     }
@@ -23,7 +23,7 @@ impl Guard {
 
 #[derive(Debug, Default, Clone)]
 struct Day6 {
-    initial_guard: Guard,
+    initial_guard: GuardPosition,
     obstacles_per_row: IndexMap<ArrayBag<usize, 32>, 256>,
     obstacles_per_column: IndexMap<ArrayBag<usize, 32>, 256>,
     visited: HashMap<Index2D, ArrayBag<CompassDirection, 4>>,
@@ -34,28 +34,28 @@ struct Day6 {
 fn parse(input: &[u8]) -> Result<Day6, !> {
     let mut result = Day6::default();
 
-    parse_graphical_input(input, |byte, position| {
+    let span = parse_graphical_input(input, |byte, position| {
         if byte == b'^' {
-            result.initial_guard = Guard { facing: CompassDirection::NORTH, position };
+            result.initial_guard = GuardPosition { facing: CompassDirection::NORTH, position };
             result.visited.entry(position).or_default().insert(CompassDirection::NORTH);
         } else if byte == b'#' {
             result.obstacles_per_row.get_or_insert_default(position.row).insert(position.column);
             result.obstacles_per_column.get_or_insert_default(position.column).insert(position.row);
         }
-        result.max_row = result.max_row.max(position.row);
-        result.max_column = result.max_column.max(position.column)
     });
+    result.max_row = span.row;
+    result.max_column = span.column;
 
     Ok(result)
 }
 
 impl Day6 {
-    fn step(&mut self, guard: &mut Guard) -> bool {
+    fn step(&mut self, guard: &mut GuardPosition) -> bool {
         guard.step();
         self.visited.entry(guard.position).or_default().insert_if_absent(guard.facing)
     }
 
-    fn find_next_obstacle(&self, guard: &Guard) -> Result<Index2D, Index2D> {
+    fn find_next_obstacle(&self, guard: &GuardPosition) -> Result<Index2D, Index2D> {
         let Day6 { obstacles_per_column, obstacles_per_row, max_row, max_column, .. } = self;
 
         let (horizontal, descending, mut exit) = match guard.facing {
@@ -134,8 +134,44 @@ fn part1(day: &mut Day6) -> usize {
     day.visited.len()
 }
 
+fn check_for_circle(input: &Day6) -> bool {
+    let mut cursor = input.initial_guard.clone();
+    let mut seen = HashSet::new();
+
+    while let Ok(obstacle) = input.find_next_obstacle(&cursor) {
+        let turning_point = obstacle - cursor.facing;
+        cursor.position = turning_point;
+        cursor.turn();
+
+        if !seen.insert(cursor.clone()) {
+            return true;
+        }
+    }
+    false
+}
+
 fn part2(mut day: Day6) -> usize {
-    0
+    let mut circles = 0;
+    for row in 0..=day.max_row {
+        for column in 0..=day.max_column {
+            let extra_block = Index2D { row, column };
+            if extra_block != day.initial_guard.position &&
+                !day.obstacles_per_row.get_or_insert_default(row).as_ref().contains(&column) {
+
+                day.obstacles_per_row.get_or_insert_default(row).insert(column);
+                day.obstacles_per_column.get_or_insert_default(column).insert(row);
+                               
+                if check_for_circle(&day) {
+                    circles += 1;
+                }
+                day.obstacles_per_row.get_or_insert_default(row).remove(&column);
+                day.obstacles_per_column.get_or_insert_default(column).remove(&row);
+
+            }
+        }
+    }
+
+    circles
 }
 
 
