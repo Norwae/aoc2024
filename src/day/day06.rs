@@ -152,22 +152,20 @@ fn check_for_circle(input: &Day6) -> bool {
 
 fn part2(mut day: Day6) -> usize {
     let mut circles = 0;
-    for row in 0..=day.max_row {
-        for column in 0..=day.max_column {
-            let extra_block = Index2D { row, column };
-            if extra_block != day.initial_guard.position &&
-                !day.obstacles_per_row.get_or_insert_default(row).as_ref().contains(&column) {
 
-                day.obstacles_per_row.get_or_insert_default(row).insert(column);
-                day.obstacles_per_column.get_or_insert_default(column).insert(row);
-                               
-                if check_for_circle(&day) {
-                    circles += 1;
-                }
-                day.obstacles_per_row.get_or_insert_default(row).remove(&column);
-                day.obstacles_per_column.get_or_insert_default(column).remove(&row);
+    for reached in day.visited.keys().cloned() {
+        let row = reached.row;
+        let column = reached.column;
+        if reached != day.initial_guard.position &&
+            !day.obstacles_per_row.get_or_insert_default(row).as_ref().contains(&column) {
+            day.obstacles_per_row.get_or_insert_default(row).insert(column);
+            day.obstacles_per_column.get_or_insert_default(column).insert(row);
 
+            if check_for_circle(&day) {
+                circles += 1;
             }
+            day.obstacles_per_row.get_or_insert_default(row).remove(&column);
+            day.obstacles_per_column.get_or_insert_default(column).remove(&row);
         }
     }
 
