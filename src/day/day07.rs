@@ -27,15 +27,19 @@ fn concat(l: u64, r: u64) -> u64 {
     shifted + r
 }
 
-fn can_solve(target_value: u64, accu: u64, rest: &[u64], used_concat: bool) -> bool {
-    if target_value < accu {
-        false
-    } else if rest.is_empty() {
+fn can_solve(target_value: u64, accu: u64, rest: &[u64], allow_concat: bool) -> bool {
+    if rest.is_empty() {
         accu == target_value
     } else {
-        can_solve(target_value, accu * rest[0], &rest[1..], used_concat) ||
-            can_solve(target_value, accu + rest[0], &rest[1..], used_concat) ||
-            can_solve(target_value, concat(accu, rest[0]), &rest[1..], true)
+        let next = rest[0];
+        if accu + next > target_value {
+            false
+        } else {
+            can_solve(target_value, accu * next, &rest[1..], allow_concat) ||
+                can_solve(target_value, accu + next, &rest[1..], allow_concat) ||
+                (allow_concat && can_solve(target_value, concat(accu, next), &rest[1..], true))
+        }
+
     }
 }
 
@@ -57,7 +61,7 @@ fn solve(input: Vec<Problem>) -> String {
             sum_1 += problem.target_value;
             sum_2 += problem.target_value;
         } else if can_solve(problem.target_value, problem.operands[0], &problem.operands[1..], true) {
-            sum_2 += dbg!(problem.target_value);
+            sum_2 += problem.target_value;
         }
     }
 
