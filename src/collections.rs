@@ -1,6 +1,6 @@
 use std::fmt::{Debug, Formatter};
-use std::mem::MaybeUninit;
-use std::ops::{Add, AddAssign, Sub, SubAssign};
+use std::mem::{swap, MaybeUninit};
+use std::ops::{Add, AddAssign, Index, IndexMut, Sub, SubAssign};
 
 #[derive(Debug, Clone)]
 pub struct IndexMap<T, const N: usize> {
@@ -192,6 +192,7 @@ pub enum CompassDirection {
 }
 
 impl CompassDirection {
+    pub const ALL: [CompassDirection;4] = [CompassDirection::NORTH, CompassDirection::EAST, CompassDirection::SOUTH, CompassDirection::WEST];
 
     pub fn turn_right(self) -> Self {
         match self {
@@ -373,3 +374,79 @@ impl Into<Location2D> for Index2D {
         Location2D { row: self.row as i64, column: self.column as i64 }
     }
 }
+
+
+#[derive(Debug)]
+pub struct Vec2D<T> {
+    storage: Vec<T>,
+    row_length: usize,
+}
+
+impl<T> From<Vec<T>> for Vec2D<T> {
+    fn from(value: Vec<T>) -> Self {
+        let row_length = value.len();
+        assert_ne!(0, row_length);
+        Self {
+            storage: value,
+            row_length,
+        }
+    }
+}
+
+impl<T> Index<usize> for Vec2D<T> {
+    type Output = [T];
+
+    fn index(&self, index: usize) -> &Self::Output {
+        let start = index * self.row_length;
+        let end = start + self.row_length;
+        &self.storage[start..end]
+    }
+}
+
+impl<T> IndexMut<usize> for Vec2D<T> {
+    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
+        let start = index * self.row_length;
+        let end = start + self.row_length;
+        &mut self.storage[start..end]
+    }
+}
+
+impl<T> Index<Index2D> for Vec2D<T> {
+    type Output = T;
+
+    fn index(&self, index: Index2D) -> &Self::Output {
+        &self[index.row][index.column]
+    }
+}
+
+impl<T> IndexMut<Index2D> for Vec2D<T> {
+    fn index_mut(&mut self, index: Index2D) -> &mut Self::Output {
+        &mut self[index.row][index.column]
+    }
+}
+
+impl<T> Vec2D<T> {
+    pub fn new_from_flat(storage: Vec<T>, row_length: usize) -> Self {
+        assert_ne!(row_length, 0);
+        Self { storage, row_length }
+    }
+
+    pub fn validate_index(&self, idx: Index2D) -> bool {
+        idx.column < self.row_length && idx.row < self.storage.len() / self.row_length
+    }
+
+    pub fn row_length(&self) -> usize {
+        self.row_length
+    }
+
+    pub fn rows(&self) -> usize {
+        self.storage.len() / self.row_length
+    }
+
+    pub fn indices(&self) -> impl Iterator<Item=Index2D> {
+        let rows = self.rows();
+        let columns = self.row_length();
+
+        (0usize..rows).flat_map(move |row|(0usize..columns).map(move |column|Index2D { row, column})).into_iter()    }
+}
+

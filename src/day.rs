@@ -100,7 +100,7 @@ pub fn parse_graphical_input(input: &[u8], mut handler: impl FnMut(u8, Index2D))
         match byte {
             b'.' | b'\r' => (),
             b'\n' => {
-                max_column = max_column.max(index.column - 1);
+                max_column = max_column.max(index.column);
                 index.row += 1;
                 index.column = 0;
                 continue;
@@ -112,8 +112,12 @@ pub fn parse_graphical_input(input: &[u8], mut handler: impl FnMut(u8, Index2D))
         index.column += 1;
     }
 
+    if index.column == 0 {
+        index.row -= 1;
+    }
+
     Index2D {
-        row: index.row - 1,
+        row: index.row,
         column: max_column
     }
 }
