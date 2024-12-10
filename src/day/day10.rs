@@ -30,7 +30,7 @@ fn parse(input: &[u8]) -> Vec2D<Tile> {
     Vec2D::new_from_flat(result, columns)
 }
 
-fn p1(mut input: Vec2D<Tile>) -> String {
+fn solve_both(mut input: Vec2D<Tile>) -> String {
     for height in (0..9).rev() {
         for idx in input.indices() {
             if input[idx].elevation == height {
@@ -38,6 +38,7 @@ fn p1(mut input: Vec2D<Tile>) -> String {
                     let i2 = idx + cd;
                     if input.validate_index(i2) && input[i2].elevation == height + 1 {
                         let mut tmp = HashSet::new();
+                        // swap-and-back trick to prove aliasing safety
                         swap(&mut input[i2].tops_reachable, &mut tmp);
                         input[idx].tops_reachable.extend(&tmp);
                         input[idx].rating += input[i2].rating;
@@ -61,4 +62,4 @@ fn p1(mut input: Vec2D<Tile>) -> String {
     format!("{sum_ends} - {sum_ratings}")
 }
 
-parsed_day!(infallible_parse(parse), p1);
+parsed_day!(infallible_parse(parse), solve_both);
