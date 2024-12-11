@@ -51,5 +51,6 @@ parsed_day!(nom_parsed_bytes(parse), | v|{
     v.frequencies.values().sum::<usize>()
 }, |mut v| {
     for _ in 0..50 { v.apply_blink() }
+
     v.frequencies.values().sum::<usize>()
 });

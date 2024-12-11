@@ -61,19 +61,18 @@ fn p2(mut input: Vec<Span>) -> usize {
     while let Some(mut candidate_index) = (&input[..last]).iter().rposition(|it|it.file_id > 0 && !it.processed) {
         let required_length = input[candidate_index].length;
         input[candidate_index].processed = true;
-        last = candidate_index;
 
         if let Some(insert_index) = input[0..candidate_index].iter().position(|it|it.file_id == -1 && it.length >= required_length) {
             if input[insert_index].length != required_length {
                 // split hole into two
+                input[insert_index].length -= required_length;
                 let tmp = Span { file_id: -1, length: required_length, processed: true};
                 input.insert(insert_index, tmp);
-                input[insert_index + 1].length -= required_length;
                 candidate_index += 1;
-                last += 1;
             }
             input.swap(insert_index,candidate_index);
         }
+        last = candidate_index;
     }
     let memory: Vec<_> = input.iter().flat_map(|Span{length, file_id, ..}|{
         (0..*length).map(move |_|*file_id)
