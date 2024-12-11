@@ -1,5 +1,7 @@
 use std::mem::swap;
+use std::ops::Index;
 use crate::*;
+use crate::ui::UIWrite;
 
 parsed_day!(parse, p1, p2);
 
@@ -59,14 +61,17 @@ fn p2(mut input: Vec<Span>) -> usize {
     while let Some(candidate_index) = (&input[..last]).iter().rposition(|it|it.file_id > 0 && !it.moved) {
         let required_length = input[candidate_index].length;
         last = candidate_index;
+
         if let Some(insert_index) = input[0..candidate_index].iter().position(|it|it.file_id == -1 && it.length >= required_length) {
-            let mut tmp = input.remove(candidate_index);
+            let mut tmp = Span { file_id: -1, length: required_length, moved: true};
+            swap(&mut tmp, &mut input[candidate_index]);
             tmp.moved = true;
-            input[insert_index].length -= required_length;
-            if input[insert_index].length == 0 {
-                swap(&mut tmp, &mut input[insert_index]);
+            input.insert(insert_index, tmp);
+            input[insert_index + 1].length -= required_length;
+            if input[insert_index + 1].length == 0 {
+                input.remove(insert_index + 1);
             } else {
-                input.insert(insert_index, tmp);
+                last += 1;
             }
         }
     }
