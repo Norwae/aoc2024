@@ -8,7 +8,7 @@ parsed_day!(parse, p1, p2);
 struct Span {
     file_id: i32,
     length: u8,
-    moved: bool
+    processed: bool
 }
 fn parse(input: &[u8]) -> Result<Vec<Span>, !> {
     #[derive(Debug, Copy, Clone, Eq, PartialEq)]
@@ -23,7 +23,7 @@ fn parse(input: &[u8]) -> Result<Vec<Span>, !> {
     for next_byte in input {
         let length = *next_byte - b'0';
         let file_id = if mode == Mode::FILE { next_id } else { -1 };
-        spans.push(Span { length, file_id, moved: false });
+        spans.push(Span { length, file_id, processed: false });
 
         if mode == Mode::FILE {
             mode = Mode::SPACE;
@@ -58,21 +58,21 @@ fn p1(input: &mut Vec<Span>) -> usize {
 
 fn p2(mut input: Vec<Span>) -> usize {
     let mut last = input.len();
-    while let Some(candidate_index) = (&input[..last]).iter().rposition(|it|it.file_id > 0 && !it.moved) {
+    while let Some(mut candidate_index) = (&input[..last]).iter().rposition(|it|it.file_id > 0 && !it.processed) {
         let required_length = input[candidate_index].length;
+        input[candidate_index].processed = true;
         last = candidate_index;
 
         if let Some(insert_index) = input[0..candidate_index].iter().position(|it|it.file_id == -1 && it.length >= required_length) {
-            let mut tmp = Span { file_id: -1, length: required_length, moved: true};
-            swap(&mut tmp, &mut input[candidate_index]);
-            tmp.moved = true;
-            input.insert(insert_index, tmp);
-            input[insert_index + 1].length -= required_length;
-            if input[insert_index + 1].length == 0 {
-                input.remove(insert_index + 1);
-            } else {
+            if input[insert_index].length != required_length {
+                // split hole into two
+                let tmp = Span { file_id: -1, length: required_length, processed: true};
+                input.insert(insert_index, tmp);
+                input[insert_index + 1].length -= required_length;
+                candidate_index += 1;
                 last += 1;
             }
+            input.swap(insert_index,candidate_index);
         }
     }
     let memory: Vec<_> = input.iter().flat_map(|Span{length, file_id, ..}|{
