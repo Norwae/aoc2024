@@ -1,5 +1,5 @@
 use crate::*;
-use crate::collections::Visor;
+use crate::collections::Slice2DVisor;
 
 const XMAS: &'static [u8;4] = b"XMAS";
 const SAMX: &'static [u8;4] = b"SAMX";
@@ -26,7 +26,7 @@ const X_MAS_PATTERNS: [&'static [u8; 5]; 4] = [
      */
     b"ASSMM",
 ];
-fn solve_1(visor: &Visor) -> usize {
+fn solve_1(visor: &Slice2DVisor) -> usize {
     let mut bytes = [0u8; 4];
     let mut found = 0;
 
@@ -75,7 +75,7 @@ fn solve_1(visor: &Visor) -> usize {
     found
 }
 
-fn solve_2(visor: Visor) -> usize {
+fn solve_2(visor: Slice2DVisor) -> usize {
     let mut bytes = [0u8; 5];
     let mut found = 0;
 
@@ -102,4 +102,4 @@ fn solve_2(visor: Visor) -> usize {
     found
 }
 
-parsed_day!(|str|Ok::<_, !>(Visor::new(str)), |i|solve_1(i), solve_2);
+parsed_day!(|str|Ok::<_, !>(Slice2DVisor::new(str)), |i|solve_1(i), solve_2);

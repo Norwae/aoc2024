@@ -447,16 +447,24 @@ impl<T> Vec2D<T> {
 
         (0usize..rows).flat_map(move |row| (0usize..columns).map(move |column| Index2D { row, column })).into_iter()
     }
+
+    fn get_or_else<'slf :'a, 'a>(&'slf self, index: Index2D, default: &'a T) -> &'a T {
+        if self.validate_index(index) {
+            &self[index]
+        } else {
+            &default
+        }
+    }
 }
 
 
-pub struct Visor<'a> {
+pub struct Slice2DVisor<'a> {
     bytes: &'a [u8],
     newline_at: usize,
 }
 
 static OUTSIDE: u8 = b'!';
-impl<'a> Visor<'a> {
+impl<'a> Slice2DVisor<'a> {
     pub fn new(bytes: &'a [u8]) -> Self {
         let newline_at = bytes.iter().position(|it| *it == b'\n').unwrap();
 
@@ -476,7 +484,7 @@ impl<'a> Visor<'a> {
     }
 }
 
-impl Index<Index2D> for Visor<'_> {
+impl Index<Index2D> for Slice2DVisor<'_> {
     type Output = u8;
 
     fn index(&self, Index2D { row, column }: Index2D) -> &Self::Output {
@@ -488,7 +496,7 @@ impl Index<Index2D> for Visor<'_> {
         }
     }
 }
-impl Index<Location2D> for Visor<'_> {
+impl Index<Location2D> for Slice2DVisor<'_> {
     type Output = u8;
 
     fn index(&self, Location2D { row, column }: Location2D) -> &Self::Output {
