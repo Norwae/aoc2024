@@ -1,5 +1,5 @@
 use std::fmt::{Debug, Formatter};
-use std::mem::{swap, MaybeUninit};
+use std::mem::MaybeUninit;
 use std::ops::{Add, AddAssign, Index, IndexMut, Sub, SubAssign};
 
 #[derive(Debug, Clone)]
@@ -446,14 +446,6 @@ impl<T> Vec2D<T> {
         let columns = self.row_length();
 
         (0usize..rows).flat_map(move |row| (0usize..columns).map(move |column| Index2D { row, column })).into_iter()
-    }
-
-    fn get_or_else<'slf :'a, 'a>(&'slf self, index: Index2D, default: &'a T) -> &'a T {
-        if self.validate_index(index) {
-            &self[index]
-        } else {
-            &default
-        }
     }
 }
 

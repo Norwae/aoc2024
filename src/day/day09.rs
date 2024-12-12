@@ -1,7 +1,4 @@
-use std::mem::swap;
-use std::ops::Index;
 use crate::*;
-use crate::ui::UIWrite;
 
 parsed_day!(parse, p1, p2);
 

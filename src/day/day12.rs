@@ -1,28 +1,18 @@
-use crate::collections::{CompassDirection, Index2D, Location2D, Slice2DVisor, Vec2D};
-use crate::simple_day;
-use std::collections::HashSet;
-use std::fmt::format;
-use std::mem::swap;
-use std::num::NonZero;
-use nom::error::dbg_dmp;
+use crate::collections::{CompassDirection, Slice2DVisor, Vec2D};
+use crate::{parsed_day, simple_day};
 
-simple_day!(|x| solve(x));
-fn solve(input: &[u8]) -> String {
+parsed_day!(|x|Ok::<_, !>(Slice2DVisor::new(x)), solve);
+fn solve(visor: Slice2DVisor) -> String {
     let mut queue = Vec::new();
 
-    let visor = Slice2DVisor::new(input);
-    let mut assignment = Vec2D::new_from_flat(
-        vec![None::<NonZero<u32>>; visor.rows() * visor.columns()],
+    let mut assigned = Vec2D::new_from_flat(
+        vec![false; visor.rows() * visor.columns()],
         visor.columns(),
     );
-    let corner_aspects = |index: Index2D| {
-        0
-    };
     let mut sum_1 = 0;
     let mut sum_2 = 0;
-    let mut next_area_index = 1;
-    for idx in assignment.indices() {
-        if assignment[idx].is_some() {
+    for idx in assigned.indices() {
+        if assigned[idx] {
             continue;
         }
 
@@ -33,13 +23,32 @@ fn solve(input: &[u8]) -> String {
         queue.push(idx);
 
         while let Some(next) = queue.pop() {
-            if assignment[next].is_some() {
+            let mut detect_corner = |d1, d2| {
+                // outer corner pattern
+                // ..
+                // #.
+                if visor[next + d1] != here && visor[next + d2] != here {
+                    area_corner_count += 1;
+                }
+
+                // inner corner pattern
+                // #.
+                // ##
+                if visor[next + d1] == here && visor[next + d2] == here && visor[next + d1 + d2] != here {
+                    area_corner_count += 1;
+                }
+            };
+
+            if assigned[next] {
                 continue;
             }
+            assigned[next] = true;
 
-            area_corner_count += corner_aspects(next);
+            detect_corner(CompassDirection::NORTH, CompassDirection::WEST);
+            detect_corner(CompassDirection::NORTH, CompassDirection::EAST);
+            detect_corner(CompassDirection::SOUTH, CompassDirection::WEST);
+            detect_corner(CompassDirection::SOUTH, CompassDirection::EAST);
 
-            assignment[next] = NonZero::<u32>::new(next_area_index);
             area_size += 1;
             for d in CompassDirection::ALL {
                 let neighbour = next + d;
@@ -49,10 +58,8 @@ fn solve(input: &[u8]) -> String {
                     area_perimeter += 1;
                 }
             }
-
         }
 
-        next_area_index += 1;
         sum_1 += area_perimeter * area_size;
         sum_2 += area_corner_count * area_size;
     }
