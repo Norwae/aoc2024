@@ -102,7 +102,6 @@ impl<T, const N: usize> AsRef<[T]> for ArrayBag<T, N> {
 }
 
 impl<T, const N: usize> ArrayBag<T, N> {
-
     fn clear(&mut self) {
         while self.empty_slot > 0 {
             self.empty_slot -= 1;
@@ -140,7 +139,7 @@ impl<T, const N: usize> ArrayBag<T, N> {
     }
 }
 
-impl <T, const N: usize> Drop for ArrayBag<T, N> {
+impl<T, const N: usize> Drop for ArrayBag<T, N> {
     fn drop(&mut self) {
         self.clear();
     }
@@ -192,7 +191,7 @@ pub enum CompassDirection {
 }
 
 impl CompassDirection {
-    pub const ALL: [CompassDirection;4] = [CompassDirection::NORTH, CompassDirection::EAST, CompassDirection::SOUTH, CompassDirection::WEST];
+    pub const ALL: [CompassDirection; 4] = [CompassDirection::NORTH, CompassDirection::EAST, CompassDirection::SOUTH, CompassDirection::WEST];
 
     pub fn turn_right(self) -> Self {
         match self {
@@ -245,7 +244,7 @@ impl Location2D {
     pub fn move_by(mut self, steps: usize, direction: CompassDirection) -> Location2D {
         let steps = steps as i64;
         match direction {
-            CompassDirection::NORTH => self.row -= steps ,
+            CompassDirection::NORTH => self.row -= steps,
             CompassDirection::EAST => self.column += steps,
             CompassDirection::SOUTH => self.row += steps,
             CompassDirection::WEST => self.column -= steps,
@@ -299,7 +298,6 @@ impl SubAssign<CompassDirection> for Index2D {
         *self = *self - rhs
     }
 }
-
 
 
 impl Add for Location2D {
@@ -358,7 +356,7 @@ impl Sub for Location2D {
 impl Into<Index2D> for Location2D {
     fn into(self) -> Index2D {
         if self.row >= 0 && self.column >= 0 {
-            Index2D { row: self.row as usize, column: self.column as usize}
+            Index2D { row: self.row as usize, column: self.column as usize }
         } else {
             Index2D::IMPLAUSIBLE
         }
@@ -447,6 +445,59 @@ impl<T> Vec2D<T> {
         let rows = self.rows();
         let columns = self.row_length();
 
-        (0usize..rows).flat_map(move |row|(0usize..columns).map(move |column|Index2D { row, column})).into_iter()    }
+        (0usize..rows).flat_map(move |row| (0usize..columns).map(move |column| Index2D { row, column })).into_iter()
+    }
 }
 
+
+pub struct Visor<'a> {
+    bytes: &'a [u8],
+    newline_at: usize,
+}
+
+static OUTSIDE: u8 = b'!';
+impl<'a> Visor<'a> {
+    pub fn new(bytes: &'a [u8]) -> Self {
+        let newline_at = bytes.iter().position(|it| *it == b'\n').unwrap();
+
+        Self { bytes, newline_at }
+    }
+
+    pub fn columns(&self) -> usize {
+        self.newline_at
+    }
+
+    pub fn rows(&self) -> usize {
+        self.bytes.len() / (self.newline_at + 1)
+    }
+
+    pub fn at(&self, row: i64, column: i64) -> u8 {
+        self[Location2D { row, column }]
+    }
+}
+
+impl Index<Index2D> for Visor<'_> {
+    type Output = u8;
+
+    fn index(&self, Index2D { row, column }: Index2D) -> &Self::Output {
+        if column >= self.columns() || row >= self.rows() {
+            &OUTSIDE
+        } else {
+            let offset = (self.newline_at + 1) * row as usize + column as usize;
+            &self.bytes[offset]
+        }
+    }
+}
+impl Index<Location2D> for Visor<'_> {
+    type Output = u8;
+
+    fn index(&self, Location2D { row, column }: Location2D) -> &Self::Output {
+        static OUTSIDE: u8 = b'!';
+        if row < 0 || column < 0 || column as usize >= self.columns() || row as usize >= self.rows() {
+            &OUTSIDE
+        } else {
+            let offset = (self.newline_at + 1) * row as usize + column as usize;
+            &self.bytes[offset]
+        }
+    }
+}

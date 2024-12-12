@@ -1,4 +1,5 @@
 use crate::*;
+use crate::collections::Visor;
 
 const XMAS: &'static [u8;4] = b"XMAS";
 const SAMX: &'static [u8;4] = b"SAMX";
@@ -25,43 +26,12 @@ const X_MAS_PATTERNS: [&'static [u8; 5]; 4] = [
      */
     b"ASSMM",
 ];
-
-struct Visor<'a> {
-    bytes: &'a [u8],
-    newline_at: usize,
-}
-
-impl<'a> Visor<'a> {
-    fn new(bytes: &'a [u8]) -> Self {
-        let newline_at = bytes.iter().position(|it| *it == b'\n').unwrap();
-
-        Self { bytes, newline_at }
-    }
-
-    fn columns(&self) -> usize {
-        self.newline_at
-    }
-
-    fn rows(&self) -> usize {
-        self.bytes.len() / (self.newline_at + 1)
-    }
-
-    fn at(&self, row: i32, column: i32) -> u8 {
-        if row < 0 || column < 0 || column as usize >= self.columns() || row as usize >= self.rows() {
-            b'!'
-        } else {
-            let offset = (self.newline_at + 1) * row as usize + column as usize;
-            self.bytes[offset]
-        }
-    }
-}
-
 fn solve_1(visor: &Visor) -> usize {
     let mut bytes = [0u8; 4];
     let mut found = 0;
 
-    for row in 0..visor.rows() as i32 {
-        for column in 0..visor.columns() as i32 {
+    for row in 0..visor.rows() as i64 {
+        for column in 0..visor.columns() as i64 {
             bytes[0] = visor.at(row, column);
             if bytes[0] != b'X' && bytes[0] != b'S' {
                 continue
@@ -109,8 +79,8 @@ fn solve_2(visor: Visor) -> usize {
     let mut bytes = [0u8; 5];
     let mut found = 0;
 
-    for row in 0..visor.rows() as i32 {
-        'col: for column in 0..visor.columns() as i32 {
+    for row in 0..visor.rows() as i64 {
+        'col: for column in 0..visor.columns() as i64 {
             bytes[0] = visor.at(row + 1, column + 1);
             if bytes[0] != b'A'  {
                 continue
