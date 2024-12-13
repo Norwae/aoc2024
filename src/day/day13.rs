@@ -5,7 +5,7 @@ use nom::bytes::complete::tag;
 use nom::character::complete::line_ending;
 use nom::combinator::map;
 use nom::multi::separated_list1;
-use nom::sequence::{preceded, separated_pair, terminated, tuple};
+use nom::sequence::{delimited, separated_pair, tuple};
 use nom::IResult;
 /*
 Button A: X+94, Y+34
@@ -69,21 +69,22 @@ parsed_day!(nom_parsed_bytes(parse), |systems| {
 
 fn parse(input: &[u8]) -> IResult<&[u8], Vec<Linear2x2System>> {
     let parse_xy = |prefix: &'static [u8], interstice: &'static [u8]| {
-        preceded(
+        delimited(
             tag(prefix),
             separated_pair(
                 parse_unsigned_nr_bytes,
                 tag(interstice),
                 parse_unsigned_nr_bytes,
             ),
+            line_ending
         )
     };
 
     let parse_single_system = map(
         tuple((
-            terminated(parse_xy(b"Button A: X+", b", Y+"), line_ending),
-            terminated(parse_xy(b"Button B: X+", b", Y+"), line_ending),
-            terminated(parse_xy(b"Prize: X=", b", Y="), line_ending),
+            parse_xy(b"Button A: X+", b", Y+"),
+            parse_xy(b"Button B: X+", b", Y+"),
+            parse_xy(b"Prize: X=", b", Y="),
         )),
         |(a, b, c)| Linear2x2System {
             a: [[a.0, b.0], [a.1, b.1]],

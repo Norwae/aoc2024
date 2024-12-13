@@ -1,8 +1,11 @@
 use std::error::Error;
 use std::fmt::{Display, Formatter};
 use std::io::Write;
-use nom::combinator::{all_consuming, complete};
+use nom::character::complete::line_ending;
+use nom::combinator::{all_consuming};
 use nom::IResult;
+use nom::multi::many0;
+use nom::sequence::terminated;
 use crate::collections::Index2D;
 use crate::ui::UIWrite;
 use crate::timed::time_span;
@@ -125,7 +128,7 @@ pub fn parse_graphical_input(input: &[u8], mut handler: impl FnMut(u8, Index2D))
 const fn nom_parsed_bytes<'i, ParseResult: 'i, NomFunc: FnMut(&'i [u8]) -> IResult<&'i[u8], ParseResult>>(
     nom_handler: NomFunc
 ) -> impl FnOnce(&'i [u8]) -> Result<ParseResult, SimpleError> {
-    |input| match all_consuming(nom_handler)(input) {
+    |input| match all_consuming(terminated(nom_handler, many0(line_ending)))(input) {
         Ok((_, parsed)) => {
                 Ok(parsed)
         }
