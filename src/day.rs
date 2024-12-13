@@ -1,7 +1,7 @@
 use std::error::Error;
 use std::fmt::{Display, Formatter};
 use std::io::Write;
-use nom::combinator::complete;
+use nom::combinator::{all_consuming, complete};
 use nom::IResult;
 use crate::collections::Index2D;
 use crate::ui::UIWrite;
@@ -125,12 +125,14 @@ pub fn parse_graphical_input(input: &[u8], mut handler: impl FnMut(u8, Index2D))
 const fn nom_parsed_bytes<'i, ParseResult: 'i, NomFunc: FnMut(&'i [u8]) -> IResult<&'i[u8], ParseResult>>(
     nom_handler: NomFunc
 ) -> impl FnOnce(&'i [u8]) -> Result<ParseResult, SimpleError> {
-    |input| match complete(nom_handler)(input) {
+    |input| match all_consuming(nom_handler)(input) {
         Ok((_, parsed)) => {
                 Ok(parsed)
         }
         Err(e) => {
-            Err(SimpleError(format!("{e}")))
+            let nom::Err::Error { 0: input } = &e else {panic!("Expected error, got {}", e)};
+            let input = String::from_utf8_lossy(input.input);
+            Err(SimpleError(format!("{e} (reported  on {input})")))
         }
     }
 }
