@@ -1,10 +1,10 @@
-use crate::day::nom_parsed_bytes;
+use crate::day::{nom_parsed_bytes, parse_and_execute_stream};
 use crate::parse_helpers::parse_unsigned_nr_bytes;
 use crate::*;
 use nom::bytes::complete::tag;
 use nom::character::complete::line_ending;
-use nom::combinator::map;
-use nom::multi::separated_list1;
+use nom::combinator::{map, opt};
+use nom::multi::{many0, separated_list1};
 use nom::sequence::{delimited, separated_pair, tuple};
 use nom::IResult;
 /*
@@ -47,27 +47,21 @@ fn solve_2x2_linear_system(linear_2x2: &Linear2x2System) -> Option<(u64, u64)> {
     }
 }
 
-parsed_day!(nom_parsed_bytes(parse), |systems| {
-    let mut sum = 0;
-    for sys in systems {
-        if let Some((a, b)) = solve_2x2_linear_system(sys) {
-            sum += 3 * a + b
-        }
-    }
-    sum
-}, |systems|{
-    let mut sum = 0u64;
-    for mut sys in systems {
-        sys.b[0] += 10000000000000.;
-        sys.b[1] += 10000000000000.;
-        if let Some((a, b)) = solve_2x2_linear_system(&sys) {
-            sum += 3 * a + b
-        }
-    }
-    sum
-});
+streaming_day!(parse, handle, |(a, b)|format!("{a} - {b}"));
 
-fn parse(input: &[u8]) -> IResult<&[u8], Vec<Linear2x2System>> {
+fn handle(state: &mut (u64, u64), mut next: Linear2x2System) {
+    if let Some((x, y)) = solve_2x2_linear_system(&next) {
+        state.0 += 3 * x + y
+    }
+    next.b[0] += 10000000000000.;
+    next.b[1] += 10000000000000.;
+
+    if let Some((x, y)) = solve_2x2_linear_system(&next) {
+        state.1 += 3 * x + y
+    }
+}
+
+fn parse(input: &[u8]) -> IResult<&[u8], Linear2x2System> {
     let parse_xy = |prefix: &'static [u8], interstice: &'static [u8]| {
         delimited(
             tag(prefix),
@@ -79,17 +73,16 @@ fn parse(input: &[u8]) -> IResult<&[u8], Vec<Linear2x2System>> {
             line_ending
         )
     };
-
-    let parse_single_system = map(
+    map(
         tuple((
             parse_xy(b"Button A: X+", b", Y+"),
             parse_xy(b"Button B: X+", b", Y+"),
             parse_xy(b"Prize: X=", b", Y="),
+            many0(line_ending)
         )),
-        |(a, b, c)| Linear2x2System {
+        |(a, b, c, _)| Linear2x2System {
             a: [[a.0, b.0], [a.1, b.1]],
             b: [c.0, c.1],
         },
-    );
-    separated_list1(line_ending, parse_single_system)(input)
+    )(input)
 }

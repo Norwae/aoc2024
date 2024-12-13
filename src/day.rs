@@ -55,6 +55,27 @@ impl<T: Write> Clone for Day<T> {
     };
 }
 
+pub fn parse_and_execute_stream<
+    'input,
+    'output,
+    ParseArtifact: 'input,
+    State: Default,
+    Parse: FnMut(&'input [u8]) -> IResult<&'input [u8], ParseArtifact, nom::error::Error<&'input [u8]>>,
+    Handler: Fn(&mut State, ParseArtifact),
+    Formatter: FnOnce(State) -> Output,
+    Output: Display,
+>(mut parse: Parse, handler: Handler, format: Formatter, mut input: &'input [u8]) -> String{
+    let mut next = parse(input);
+    let mut state = State::default();
+    while let Ok((rest, next_element)) = next {
+        handler(&mut state, next_element);
+        input = rest;
+        next = parse(input)
+    }
+
+    format!("{} ({} unconsumed bytes)", format(state), input.len())
+}
+
 pub fn parse_and_execute<
     'input,
     'output,
@@ -139,6 +160,14 @@ const fn nom_parsed_bytes<'i, ParseResult: 'i, NomFunc: FnMut(&'i [u8]) -> IResu
         }
     }
 }
+
+#[macro_export] macro_rules! streaming_day {
+     ($parse:expr, $handle:expr, $format:expr) => {
+         simple_day! {|x|
+            crate::day::parse_and_execute_stream($parse, $handle, $format, x)
+         }
+     };
+ }
 
 #[macro_export] macro_rules! parsed_day {
     ($parse:expr) => {
