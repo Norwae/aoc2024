@@ -1,6 +1,6 @@
 use std::fmt::{Debug, Formatter};
 use std::mem::MaybeUninit;
-use std::ops::{Add, AddAssign, Index, IndexMut, Sub, SubAssign};
+use std::ops::{Add, AddAssign, Index, IndexMut, Mul, Sub, SubAssign};
 
 #[derive(Debug, Clone)]
 pub struct IndexMap<T, const N: usize> {
@@ -380,6 +380,7 @@ pub struct Vec2D<T> {
     row_length: usize,
 }
 
+
 impl<T> From<Vec<T>> for Vec2D<T> {
     fn from(value: Vec<T>) -> Self {
         let row_length = value.len();
@@ -439,6 +440,10 @@ impl<T> Vec2D<T> {
 
     pub fn rows(&self) -> usize {
         self.storage.len() / self.row_length
+    }
+
+    pub fn as_slice(&self) -> &[T] {
+        self.storage.as_slice()
     }
 
     pub fn indices(&self) -> impl Iterator<Item=Index2D> {

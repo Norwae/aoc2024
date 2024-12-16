@@ -1,6 +1,6 @@
 use std::error::Error;
 use std::fmt::{Display, Formatter};
-use std::io::Write;
+use std::io::{stdin, Write};
 use nom::character::complete::line_ending;
 use nom::combinator::{all_consuming};
 use nom::IResult;
@@ -54,6 +54,24 @@ impl<T: Write> Clone for Day<T> {
         }
     };
 }
+
+
+
+#[cfg(debug_assertions)]
+fn visual_inspection(to_verify: impl Display, solution: usize) -> bool {
+    println!("{}", to_verify);
+    println!("Accept {solution}?");
+    let mut response = String::new();
+    stdin().read_line(&mut response).unwrap();
+
+    response.starts_with("y")
+}
+#[cfg(not(debug_assertions))]
+fn visual_inspection(to_verify: impl Display, solution: usize) -> bool {
+    true
+}
+
+
 
 pub fn parse_and_execute_stream<
     'input,
