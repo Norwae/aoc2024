@@ -1,6 +1,7 @@
 use std::fmt::{Debug, Formatter};
 use std::mem::MaybeUninit;
 use std::ops::{Add, AddAssign, Index, IndexMut, Mul, Sub, SubAssign};
+use pathfinding::num_traits::real::Real;
 
 #[derive(Debug, Clone)]
 pub struct IndexMap<T, const N: usize> {
@@ -19,7 +20,10 @@ impl<T, const N: usize> Default for IndexMap<T, N> {
 
 impl<T, const N: usize> IndexMap<T, N> {
     pub fn new() -> Self {
-        Self { storage: [const { None }; N], mappings: 0 }
+        Self {
+            storage: [const { None }; N],
+            mappings: 0,
+        }
     }
 
     pub fn is_empty(&self) -> bool {
@@ -33,17 +37,18 @@ impl<T, const N: usize> IndexMap<T, N> {
         }
     }
 
-    pub fn values_iter_mut(&mut self) -> impl Iterator<Item=&mut T> {
+    pub fn values_iter_mut(&mut self) -> impl Iterator<Item = &mut T> {
         self.iter_mut().map(|(_, v)| v)
     }
 
-    pub fn iter_mut(&mut self) -> impl Iterator<Item=(usize, &mut T)> {
-        self.storage.iter_mut().enumerate().filter_map(|(n, stored)| {
-            match stored {
+    pub fn iter_mut(&mut self) -> impl Iterator<Item = (usize, &mut T)> {
+        self.storage
+            .iter_mut()
+            .enumerate()
+            .filter_map(|(n, stored)| match stored {
                 None => None,
-                Some(v) => Some((n, v))
-            }
-        })
+                Some(v) => Some((n, v)),
+            })
     }
 
     pub fn get(&self, index: usize) -> Option<&T> {
@@ -53,13 +58,14 @@ impl<T, const N: usize> IndexMap<T, N> {
         self.storage[index].as_ref()
     }
 
-    pub fn iter(&self) -> impl Iterator<Item=(usize, &T)> {
-        self.storage.iter().enumerate().filter_map(|(n, stored)| {
-            match stored {
+    pub fn iter(&self) -> impl Iterator<Item = (usize, &T)> {
+        self.storage
+            .iter()
+            .enumerate()
+            .filter_map(|(n, stored)| match stored {
                 None => None,
-                Some(v) => Some((n, v))
-            }
-        })
+                Some(v) => Some((n, v)),
+            })
     }
 }
 
@@ -78,6 +84,7 @@ pub struct ArrayBag<T, const N: usize> {
     empty_slot: usize,
 }
 
+
 impl<T: Debug, const N: usize> Debug for ArrayBag<T, N> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.write_fmt(format_args!("{:?}", self.as_ref()))
@@ -86,7 +93,10 @@ impl<T: Debug, const N: usize> Debug for ArrayBag<T, N> {
 
 impl<T, const N: usize> Default for ArrayBag<T, N> {
     fn default() -> Self {
-        Self { storage: [const { MaybeUninit::uninit() }; N], empty_slot: 0 }
+        Self {
+            storage: [const { MaybeUninit::uninit() }; N],
+            empty_slot: 0,
+        }
     }
 }
 
@@ -118,7 +128,7 @@ impl<T, const N: usize> ArrayBag<T, N> {
         self.empty_slot == 0
     }
 
-    pub fn iter(&self) -> impl Iterator<Item=&T> {
+    pub fn iter(&self) -> impl Iterator<Item = &T> {
         self.storage[0..self.empty_slot].iter().map(|i| {
             unsafe {
                 // safe - we have read access, so empty_slot cannot change. Consequently, no
@@ -127,7 +137,6 @@ impl<T, const N: usize> ArrayBag<T, N> {
             }
         })
     }
-
 
     pub fn insert(&mut self, elem: T) {
         if self.empty_slot == N {
@@ -182,27 +191,94 @@ impl<T: Clone, const N: usize> Clone for ArrayBag<T, N> {
 }
 
 
+pub struct ArrayBagIter<T, const N: usize> {
+    head: usize,
+    bag: ArrayBag<T, N>
+}
+
+
+/**
+IntoIterator view of an ArrayBag - will violate the initialization
+rules of a living ArrayBag (0..empty_slot always being valid) by instead
+retaining validity between (head..empty_slot) only, reading entries from the start
+*/
+impl <T, const N: usize> Iterator for ArrayBagIter<T, N> {
+    type Item = T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.head >= self.bag.empty_slot {
+            None
+        } else {
+            // safety - this takes ownership of the initialized value, freeing us
+            // from the responsibility of dropping it later.
+            let read_slot = self.head;
+            let value = unsafe {
+                self.head += 1;
+                self.bag.storage[read_slot].assume_init_read()
+            };
+
+            Some(value)
+        }
+    }
+}
+
+impl <T, const N: usize> Drop for ArrayBagIter<T, N> {
+    fn drop(&mut self) {
+        while let Some(_) = self.next() {
+            // simple inefficient implementation - just read and drop the remaining elements
+        }
+    }
+}
+
+
+impl <T, const N: usize> IntoIterator for ArrayBag<T, N> {
+    type Item = T;
+    type IntoIter = ArrayBagIter<T, N>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        ArrayBagIter {
+            head: 0,
+            bag: self,
+        }
+    }
+}
+
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Default, Hash)]
 pub enum CompassDirection {
-    #[default] NORTH,
+    #[default]
+    NORTH,
     EAST,
     SOUTH,
     WEST,
 }
 
 impl CompassDirection {
-    pub const ALL: [CompassDirection; 4] = [CompassDirection::NORTH, CompassDirection::EAST, CompassDirection::SOUTH, CompassDirection::WEST];
+    pub const ALL: [CompassDirection; 4] = [
+        CompassDirection::NORTH,
+        CompassDirection::EAST,
+        CompassDirection::SOUTH,
+        CompassDirection::WEST,
+    ];
 
     pub fn turn_right(self) -> Self {
         match self {
             CompassDirection::NORTH => CompassDirection::EAST,
             CompassDirection::EAST => CompassDirection::SOUTH,
             CompassDirection::SOUTH => CompassDirection::WEST,
-            CompassDirection::WEST => CompassDirection::NORTH
+            CompassDirection::WEST => CompassDirection::NORTH,
+        }
+    }
+
+
+    pub fn turn_left(self) -> Self {
+        match self {
+            CompassDirection::NORTH => CompassDirection::WEST,
+            CompassDirection::EAST => CompassDirection::NORTH,
+            CompassDirection::SOUTH => CompassDirection::EAST,
+            CompassDirection::WEST => CompassDirection::SOUTH,
         }
     }
 }
-
 
 #[derive(Debug, Copy, Clone, Default, Eq, PartialEq, Hash)]
 pub struct Location2D {
@@ -218,9 +294,18 @@ pub struct Index2D {
 
 
 impl Index2D {
-    const IMPLAUSIBLE: Index2D = Index2D { row: usize::MAX, column: usize::MAX };
+    pub const IMPLAUSIBLE: Index2D = Index2D {
+        row: usize::MAX,
+        column: usize::MAX,
+    };
     pub fn plausible(self) -> bool {
         self.row != Self::IMPLAUSIBLE.row && self.column != Self::IMPLAUSIBLE.column
+    }
+
+    pub fn manhattan_distance(self, other: Index2D) -> usize {
+        let x = self.column as isize - other.column as isize;
+        let y = self.row as isize - other.row as isize;
+        (x.abs() + y.abs()) as usize
     }
 
     pub fn move_by(mut self, steps: usize, direction: CompassDirection) -> Index2D {
@@ -232,7 +317,7 @@ impl Index2D {
                 CompassDirection::EAST => self.column += steps,
                 CompassDirection::SOUTH => self.row += steps,
                 CompassDirection::WEST if self.column >= steps => self.column -= steps,
-                _ => self = Self::IMPLAUSIBLE
+                _ => self = Self::IMPLAUSIBLE,
             }
         }
 
@@ -299,7 +384,6 @@ impl SubAssign<CompassDirection> for Index2D {
     }
 }
 
-
 impl Add for Location2D {
     type Output = Location2D;
 
@@ -349,14 +433,20 @@ impl Sub for Location2D {
     type Output = Location2D;
 
     fn sub(self, rhs: Self) -> Self::Output {
-        Location2D { row: self.row - rhs.row, column: self.column - rhs.column }
+        Location2D {
+            row: self.row - rhs.row,
+            column: self.column - rhs.column,
+        }
     }
 }
 
 impl Into<Index2D> for Location2D {
     fn into(self) -> Index2D {
         if self.row >= 0 && self.column >= 0 {
-            Index2D { row: self.row as usize, column: self.column as usize }
+            Index2D {
+                row: self.row as usize,
+                column: self.column as usize,
+            }
         } else {
             Index2D::IMPLAUSIBLE
         }
@@ -369,17 +459,18 @@ impl Into<Location2D> for Index2D {
             panic!("Implausible cannot be resolved anymore")
         }
 
-        Location2D { row: self.row as i64, column: self.column as i64 }
+        Location2D {
+            row: self.row as i64,
+            column: self.column as i64,
+        }
     }
 }
-
 
 #[derive(Debug)]
 pub struct Vec2D<T> {
     storage: Vec<T>,
     row_length: usize,
 }
-
 
 impl<T> From<Vec<T>> for Vec2D<T> {
     fn from(value: Vec<T>) -> Self {
@@ -427,7 +518,10 @@ impl<T> IndexMut<Index2D> for Vec2D<T> {
 impl<T> Vec2D<T> {
     pub fn new_from_flat(storage: Vec<T>, row_length: usize) -> Self {
         assert_ne!(row_length, 0);
-        Self { storage, row_length }
+        Self {
+            storage,
+            row_length,
+        }
     }
 
     pub fn validate_index(&self, idx: Index2D) -> bool {
@@ -446,14 +540,22 @@ impl<T> Vec2D<T> {
         self.storage.as_slice()
     }
 
-    pub fn indices(&self) -> impl Iterator<Item=Index2D> {
+    pub fn indices(&self) -> impl Iterator<Item = Index2D> {
         let rows = self.rows();
         let columns = self.row_length();
 
-        (0usize..rows).flat_map(move |row| (0usize..columns).map(move |column| Index2D { row, column })).into_iter()
+        (0usize..rows)
+            .flat_map(move |row| (0usize..columns).map(move |column| Index2D { row, column }))
+            .into_iter()
     }
 }
 
+impl<T: Clone> Vec2D<T> {
+    pub fn filled(default: T, rows: usize, columns: usize) -> Self {
+        let storage = vec![default; rows * columns];
+        Self::new_from_flat(storage, columns)
+    }
+}
 
 pub struct Slice2DVisor<'a> {
     bytes: &'a [u8],
@@ -498,7 +600,8 @@ impl Index<Location2D> for Slice2DVisor<'_> {
 
     fn index(&self, Location2D { row, column }: Location2D) -> &Self::Output {
         static OUTSIDE: u8 = b'!';
-        if row < 0 || column < 0 || column as usize >= self.columns() || row as usize >= self.rows() {
+        if row < 0 || column < 0 || column as usize >= self.columns() || row as usize >= self.rows()
+        {
             &OUTSIDE
         } else {
             let offset = (self.newline_at + 1) * row as usize + column as usize;
