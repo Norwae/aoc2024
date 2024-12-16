@@ -133,35 +133,35 @@ impl Display for SimpleError {
 
 impl Error for SimpleError {}
 
-pub fn parse_graphical_input(input: &[u8], mut handler: impl FnMut(u8, Index2D)) -> Index2D {
+
+pub fn parse_graphical_input_raw(input: &[u8], mut handler: impl FnMut(u8, Index2D) -> bool) {
     let mut index = Index2D::default();
-    let mut max_column = 0;
     for byte in input {
         let byte = *byte;
 
+        if !handler(byte, index) {
+            index.column += 1;
+        } else {
+            index.column = 0;
+            index.row += 1;
+        }
+    }
+}
+
+pub fn parse_graphical_input(input: &[u8], mut handler: impl FnMut(u8, Index2D)) -> Index2D {
+    let mut latest = Index2D::default();
+    parse_graphical_input_raw(input, |byte, index| {
+        latest = index;
         match byte {
-            b'.' | b'\r' => (),
-            b'\n' => {
-                max_column = max_column.max(index.column);
-                index.row += 1;
-                index.column = 0;
-                continue;
-            }
+            b'.' | b'\r' => false,
+            b'\n' => true,
             other => {
-                handler(other, index)
+                handler(other, index);
+                false
             }
         }
-        index.column += 1;
-    }
-
-    if index.column == 0 {
-        index.row -= 1;
-    }
-
-    Index2D {
-        row: index.row,
-        column: max_column
-    }
+    });
+    latest
 }
 
 const fn nom_parsed_bytes<'i, ParseResult: 'i, NomFunc: FnMut(&'i [u8]) -> IResult<&'i[u8], ParseResult>>(
