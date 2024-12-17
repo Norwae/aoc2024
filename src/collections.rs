@@ -466,7 +466,7 @@ impl Into<Location2D> for Index2D {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Vec2D<T> {
     storage: Vec<T>,
     row_length: usize,
