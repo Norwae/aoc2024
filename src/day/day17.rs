@@ -1,3 +1,4 @@
+use std::mem;
 use crate::day::nom_parsed_bytes;
 use crate::parse_helpers::parse_unsigned_nr_bytes;
 use crate::*;
@@ -9,82 +10,53 @@ use nom::sequence::tuple;
 use nom::IResult;
 use std::rc::Rc;
 
-#[derive(Debug, Copy, Clone)]
-#[repr(u8)]
-enum Operation {
-    Adv,
-    Bxl,
-    Bst,
-    Jnz,
-    Bxc,
-    Out,
-    Bdv,
-    Cdv,
-}
-
 #[derive(Debug, Clone)]
 struct VM {
     register_a: i64,
     register_b: i64,
     register_c: i64,
     instruction_pointer: usize,
-    program: Rc<Vec<Operation>>,
+    program: Rc<Vec<u8>>,
     output: Vec<u8>,
-    quine: Quine,
-}
-
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
-enum Quine {
-    NOT_QUINE,
-    POTENTIALLY_QUINE,
-    QUINE,
 }
 
 impl VM {
+
+
     fn step(&mut self) {
         let instruction = self.program[self.instruction_pointer];
         let argument = self.program[self.instruction_pointer + 1] as u8;
 
         match instruction {
-            Operation::Adv => {
+            0 => {
                 self.register_a = self.register_a / (1 << self.lookup_combo_operand(argument));
             }
-            Operation::Bxl => {
+            1 => {
                 self.register_b = self.register_b ^ argument as i64;
             }
-            Operation::Bst => {
+            2 => {
                 self.register_b = self.lookup_combo_operand(argument) & 0x07;
             }
-            Operation::Jnz => {
+            3 => {
                 if self.register_a != 0 {
                     self.instruction_pointer = argument as usize;
                     return;
                 }
             }
-            Operation::Bxc => {
+            4 => {
                 self.register_b ^= self.register_c;
             }
-            Operation::Out => {
+            5 => {
                 self.output
                     .push((self.lookup_combo_operand(argument) & 0x07) as u8);
-                'quine_check: {
-                    for i in 0..self.output.len() {
-                        if self.output[i] != self.program[i] as u8 {
-                            self.quine = Quine::NOT_QUINE;
-                            break 'quine_check;
-                        }
-                        if self.output.len() == self.program.len() {
-                            self.quine = Quine::QUINE;
-                        }
-                    }
-                }
             }
-            Operation::Bdv => {
+            6 => {
                 self.register_b = self.register_a / (1 << self.lookup_combo_operand(argument));
             }
-            Operation::Cdv => {
+            7 => {
                 self.register_c = self.register_a / (1 << self.lookup_combo_operand(argument));
             }
+            _ => unreachable!()
         }
         self.instruction_pointer += 2;
     }
@@ -101,16 +73,16 @@ impl VM {
     }
 }
 
-fn parse_instruction(input: &[u8]) -> IResult<&[u8], Operation> {
+fn parse_instruction(input: &[u8]) -> IResult<&[u8], u8> {
     alt((
-        value(Operation::Adv, tag("0")),
-        value(Operation::Bxl, tag("1")),
-        value(Operation::Bst, tag("2")),
-        value(Operation::Jnz, tag("3")),
-        value(Operation::Bxc, tag("4")),
-        value(Operation::Out, tag("5")),
-        value(Operation::Bdv, tag("6")),
-        value(Operation::Cdv, tag("7")),
+        value(0, tag("0")),
+        value(1, tag("1")),
+        value(2, tag("2")),
+        value(3, tag("3")),
+        value(4, tag("4")),
+        value(5, tag("5")),
+        value(6, tag("6")),
+        value(7, tag("7")),
     ))(input)
 }
 fn parse(input: &[u8]) -> IResult<&[u8], VM> {
@@ -132,49 +104,42 @@ fn parse(input: &[u8]) -> IResult<&[u8], VM> {
             program: Rc::new(program),
             instruction_pointer: 0,
             output: Vec::new(),
-            quine: Quine::POTENTIALLY_QUINE,
         },
     )(input)
 }
 
 fn solve(day: VM) -> String {
+    let program_length = day.program.len();
     let mut day_part_1 = day.clone();
     while day_part_1.instruction_pointer < day_part_1.program.len() {
         day_part_1.step();
     }
 
     let output_part_1 = day_part_1.output;
-    let mut quine_at = -1;
+    let mut quine_at = usize::MAX;
 
-    // everything seems nibble-based, so let's try that
-    // nope, no obvious bit pattern in prefix search, was
-    // 1110 -> 101001010 -> 1111010111101
-    let mut i = 0;
-    let mut best_length = 0;
+    let mut i = 0usize;
+    let mut match_length = 1;
     loop {
         let mut day = day.clone();
-        day.register_a = i;
+        day.register_a = i as i64;
 
-        for _ in 0..100000 {
+        while day.instruction_pointer < day.program.len() {
             day.step();
-            if day.instruction_pointer >= day.program.len() || day.quine != Quine::POTENTIALLY_QUINE
-            {
+        }
+        let output = day.output.as_slice();
+        let program_suffix = &day.program[program_length - match_length..];
+        if output == program_suffix {
+            if match_length ==  day.program.len() {
+                quine_at = i;
                 break;
             }
+            match_length += 1;
+            i <<= 3;
+        } else {
+            i += 1;
         }
 
-        if day.quine == Quine::QUINE {
-            quine_at = i;
-            break;
-        } else {
-            dbg!(day.quine, i, &day.output);
-            if day.output.len() - 1 > best_length {
-                // improvement :D
-                best_length = day.output.len() - 1;
-                i <<= 4;
-            }
-        }
-        i += 1;
     }
 
     format!("Part 1: {output_part_1:?}, Part 2: {quine_at}")
