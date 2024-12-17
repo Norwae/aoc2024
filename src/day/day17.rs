@@ -1,12 +1,13 @@
+use crate::day::nom_parsed_bytes;
+use crate::parse_helpers::parse_unsigned_nr_bytes;
+use crate::*;
 use nom::branch::alt;
 use nom::bytes::complete::tag;
 use nom::combinator::{map, value};
-use nom::IResult;
 use nom::multi::separated_list1;
 use nom::sequence::tuple;
-use crate::*;
-use crate::day::nom_parsed_bytes;
-use crate::parse_helpers::parse_unsigned_nr_bytes;
+use nom::IResult;
+use std::rc::Rc;
 
 #[derive(Debug, Copy, Clone)]
 #[repr(u8)]
@@ -21,14 +22,22 @@ enum Operation {
     Cdv,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct VM {
     register_a: i64,
     register_b: i64,
     register_c: i64,
     instruction_pointer: usize,
-    program: Vec<Operation>,
-    output: String
+    program: Rc<Vec<Operation>>,
+    output: Vec<u8>,
+    quine: Quine,
+}
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+enum Quine {
+    NOT_QUINE,
+    POTENTIALLY_QUINE,
+    QUINE,
 }
 
 impl VM {
@@ -56,10 +65,19 @@ impl VM {
                 self.register_b ^= self.register_c;
             }
             Operation::Out => {
-                if !self.output.is_empty() {
-                    self.output.push(',');
+                self.output
+                    .push((self.lookup_combo_operand(argument) & 0x07) as u8);
+                'quine_check: {
+                    for i in 0..self.output.len() {
+                        if self.output[i] != self.program[i] as u8 {
+                            self.quine = Quine::NOT_QUINE;
+                            break 'quine_check;
+                        }
+                        if self.output.len() == self.program.len() {
+                            self.quine = Quine::QUINE;
+                        }
+                    }
                 }
-                self.output.push_str(&format!("{}", self.lookup_combo_operand(argument) & 0x07));
             }
             Operation::Bdv => {
                 self.register_b = self.register_a / (1 << self.lookup_combo_operand(argument));
@@ -78,7 +96,7 @@ impl VM {
             5 => self.register_b,
             6 => self.register_c,
             7 => panic!("reserved value"),
-            _ => panic!("invalid value")
+            _ => panic!("invalid value"),
         }
     }
 }
@@ -96,24 +114,70 @@ fn parse_instruction(input: &[u8]) -> IResult<&[u8], Operation> {
     ))(input)
 }
 fn parse(input: &[u8]) -> IResult<&[u8], VM> {
-    map(tuple((
-        tag("Register A: "),
-        parse_unsigned_nr_bytes,
-        tag("\nRegister B: "),
-        parse_unsigned_nr_bytes,
-        tag("\nRegister C: "),
-        parse_unsigned_nr_bytes,
-        tag("\n\nProgram: "),
-        separated_list1(tag(","), parse_instruction)
-    )), |(_, register_a, _, register_b, _, register_c, _, program)| VM { register_c, register_b, register_a, program, instruction_pointer: 0, output: String::new()})(input)
+    map(
+        tuple((
+            tag("Register A: "),
+            parse_unsigned_nr_bytes,
+            tag("\nRegister B: "),
+            parse_unsigned_nr_bytes,
+            tag("\nRegister C: "),
+            parse_unsigned_nr_bytes,
+            tag("\n\nProgram: "),
+            separated_list1(tag(","), parse_instruction),
+        )),
+        |(_, register_a, _, register_b, _, register_c, _, program)| VM {
+            register_c,
+            register_b,
+            register_a,
+            program: Rc::new(program),
+            instruction_pointer: 0,
+            output: Vec::new(),
+            quine: Quine::POTENTIALLY_QUINE,
+        },
+    )(input)
 }
 
-fn solve1(mut day: VM) -> String {
-    while day.instruction_pointer < day.program.len() {
-        day.step();
+fn solve(day: VM) -> String {
+    let mut day_part_1 = day.clone();
+    while day_part_1.instruction_pointer < day_part_1.program.len() {
+        day_part_1.step();
     }
 
-    day.output
+    let output_part_1 = day_part_1.output;
+    let mut quine_at = -1;
+
+    // everything seems nibble-based, so let's try that
+    // nope, no obvious bit pattern in prefix search, was
+    // 1110 -> 101001010 -> 1111010111101
+    let mut i = 0;
+    let mut best_length = 0;
+    loop {
+        let mut day = day.clone();
+        day.register_a = i;
+
+        for _ in 0..100000 {
+            day.step();
+            if day.instruction_pointer >= day.program.len() || day.quine != Quine::POTENTIALLY_QUINE
+            {
+                break;
+            }
+        }
+
+        if day.quine == Quine::QUINE {
+            quine_at = i;
+            break;
+        } else {
+            dbg!(day.quine, i, &day.output);
+            if day.output.len() - 1 > best_length {
+                // improvement :D
+                best_length = day.output.len() - 1;
+                i <<= 4;
+            }
+        }
+        i += 1;
+    }
+
+    format!("Part 1: {output_part_1:?}, Part 2: {quine_at}")
 }
 
-parsed_day!(nom_parsed_bytes(parse), solve1);
+parsed_day!(nom_parsed_bytes(parse), solve);
