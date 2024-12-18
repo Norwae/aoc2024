@@ -1,4 +1,3 @@
-use std::mem;
 use crate::day::nom_parsed_bytes;
 use crate::parse_helpers::parse_unsigned_nr_bytes;
 use crate::*;
@@ -116,7 +115,6 @@ fn solve(day: VM) -> String {
     }
 
     let output_part_1 = day_part_1.output;
-    let mut quine_at = usize::MAX;
 
     let mut i = 0usize;
     let mut match_length = 1;
@@ -131,7 +129,6 @@ fn solve(day: VM) -> String {
         let program_suffix = &day.program[program_length - match_length..];
         if output == program_suffix {
             if match_length ==  day.program.len() {
-                quine_at = i;
                 break;
             }
             match_length += 1;
@@ -142,7 +139,7 @@ fn solve(day: VM) -> String {
 
     }
 
-    format!("Part 1: {output_part_1:?}, Part 2: {quine_at}")
+    format!("Part 1: {output_part_1:?}, Part 2: {i}")
 }
 
 parsed_day!(nom_parsed_bytes(parse), solve);

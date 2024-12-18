@@ -1,7 +1,6 @@
 use std::fmt::{Debug, Formatter};
 use std::mem::MaybeUninit;
-use std::ops::{Add, AddAssign, Index, IndexMut, Mul, Sub, SubAssign};
-use pathfinding::num_traits::real::Real;
+use std::ops::{Add, AddAssign, Index, IndexMut, Sub, SubAssign};
 
 #[derive(Debug, Clone)]
 pub struct IndexMap<T, const N: usize> {
@@ -298,6 +297,11 @@ impl Index2D {
         row: usize::MAX,
         column: usize::MAX,
     };
+    pub const ZERO: Index2D = Index2D {
+        row: 0,
+        column: 0,
+    };
+
     pub fn plausible(self) -> bool {
         self.row != Self::IMPLAUSIBLE.row && self.column != Self::IMPLAUSIBLE.column
     }

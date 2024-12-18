@@ -1,9 +1,7 @@
 use crate::collections::{ArrayBag, CompassDirection, Index2D, Vec2D};
 use crate::day::parse_graphical_input;
 use crate::*;
-use nom::IResult;
 use std::collections::HashSet;
-use std::hash::RandomState;
 
 #[derive(Debug, Eq, PartialEq, Clone, Hash)]
 struct Node {
@@ -44,7 +42,7 @@ fn parse(input: &[u8]) -> Result<Day17, !> {
 }
 
 fn p1(day: Day17) -> String {
-    let (mut iter, score) = pathfinding::directed::astar::astar_bag(
+    let (iter, score) = pathfinding::directed::astar::astar_bag(
         &day.start,
         |node| {
             let mut buffer = ArrayBag::<_, 3>::default();

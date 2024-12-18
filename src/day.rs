@@ -57,18 +57,18 @@ impl<T: Write> Clone for Day<T> {
 
 
 
-#[cfg(debug_assertions)]
 fn visual_inspection(to_verify: impl Display, solution: usize) -> bool {
-    println!("{}", to_verify);
-    println!("Accept {solution}?");
-    let mut response = String::new();
-    stdin().read_line(&mut response).unwrap();
+    if cfg!(debug_assertions) {
 
-    response.starts_with("y")
-}
-#[cfg(not(debug_assertions))]
-fn visual_inspection(to_verify: impl Display, solution: usize) -> bool {
-    true
+        println!("{}", to_verify);
+        println!("Accept {solution}?");
+        let mut response = String::new();
+        stdin().read_line(&mut response).unwrap();
+        response.starts_with("y")
+    } else {
+        true
+    }
+
 }
 
 

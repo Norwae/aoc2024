@@ -1,14 +1,13 @@
 use std::fmt::{Display, Formatter, Write};
-use std::io::{stdin, Stdin};
-use crate::collections::{Index2D, Location2D, Vec2D};
+use crate::collections::{Index2D, Vec2D};
 use crate::parse_helpers::parse_signed_nr_bytes;
 use crate::*;
 use nom::bytes::complete::tag;
 use nom::character::complete::line_ending;
 use nom::combinator::map;
-use nom::sequence::{delimited, preceded, separated_pair};
+use nom::sequence::{preceded, separated_pair};
 use nom::IResult;
-use nom::multi::{separated_list0, separated_list1};
+use nom::multi::{separated_list0};
 use crate::day::{nom_parsed_bytes, visual_inspection};
 
 #[derive(Debug, Clone)]

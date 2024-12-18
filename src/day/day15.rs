@@ -1,6 +1,6 @@
 use std::collections::HashSet;
-use crate::collections::{CompassDirection, Index2D, Vec2D};
-use crate::day::{nom_parsed_bytes, parse_graphical_input, parse_graphical_input_raw, Day};
+use crate::collections::{CompassDirection, Index2D};
+use crate::day::{nom_parsed_bytes, parse_graphical_input};
 use crate::*;
 use nom::bytes::complete::take_until;
 use nom::{AsBytes, IResult};
