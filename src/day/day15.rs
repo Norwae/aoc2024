@@ -187,7 +187,7 @@ impl Day15 {
             if self.boulders.contains(&(boulder + CompassDirection::WEST)) {
                 return false;
             }
-            if self.boulders.contains(&(boulder + CompassDirection::WEST)) {
+            if self.boulders.contains(&(boulder + CompassDirection::EAST)) {
                 return false;
             }
         }
