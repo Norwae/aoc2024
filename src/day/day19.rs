@@ -1,20 +1,20 @@
-use std::cell::RefCell;
-use fxhash::FxHashMap;
 use crate::ui::UIWrite;
 use crate::*;
+use fxhash::FxHashMap;
 use nom::bytes::complete::{tag, take_while1};
 use nom::character::complete::line_ending;
 use nom::multi::separated_list1;
 use nom::IResult;
+use std::cell::RefCell;
 
 #[derive(Debug)]
 struct OnsenPatterns<'a> {
     available_patterns: Vec<&'a str>,
     requested: Vec<&'a str>,
-    construction_cache: RefCell<FxHashMap<&'a str, usize>>
+    construction_cache: RefCell<FxHashMap<&'a str, usize>>,
 }
 
-impl <'a> OnsenPatterns<'a> {
+impl<'a> OnsenPatterns<'a> {
     fn construction_counts(&self, target: &'a str) -> usize {
         if let Some(cached) = self.construction_cache.borrow().get(target) {
             return *cached;
@@ -52,23 +52,26 @@ fn parse_pattern(input: &str) -> IResult<&str, &str> {
 }
 
 fn parse(input: &str) -> IResult<&str, OnsenPatterns> {
-    let (rest, available_patterns) = separated_list1(tag(", "), parse_pattern)(input)?;
+    let (rest, mut available_patterns) = separated_list1(tag(", "), parse_pattern)(input)?;
     // skip 2 separators
-    let (rest, requested) = separated_list1(line_ending, parse_pattern)(&rest[2..])?;
+    let (rest, mut requested) = separated_list1(line_ending, parse_pattern)(&rest[2..])?;
+
+    available_patterns.sort_by_key(|it| it.len());
+    requested.sort_by_key(|it| it.len());
 
     Ok((
         rest,
         OnsenPatterns {
             available_patterns,
             requested,
-            construction_cache: RefCell::default()
+            construction_cache: RefCell::default(),
         },
     ))
 }
 
 fn solve(input: &[u8], _out: &mut impl UIWrite) -> String {
     let input = String::from_utf8_lossy(input);
-    let mut problem= parse(input.as_ref()).unwrap().1;
+    let mut problem = parse(input.as_ref()).unwrap().1;
 
     let (solvable, permutations) = problem.do_solve();
     format!("Solvable: {solvable}, permutations {permutations}")
