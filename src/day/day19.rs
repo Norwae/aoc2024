@@ -1,3 +1,4 @@
+use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
 use crate::ui::UIWrite;
@@ -9,32 +10,32 @@ use nom::IResult;
 
 #[derive(Debug)]
 struct OnsenPatterns<'a> {
-    available_patterns: Rc<Vec<&'a str>>,
-    requested: Rc<Vec<&'a str>>,
-    construction_cache: HashMap<&'a str, usize>
+    available_patterns: Vec<&'a str>,
+    requested: Vec<&'a str>,
+    construction_cache: RefCell<HashMap<&'a str, usize>>
 }
 
 impl <'a> OnsenPatterns<'a> {
-    fn construction_counts(&mut self, target: &'a str) -> usize {
-        if let Some(cached) = self.construction_cache.get(target) {
+    fn construction_counts(&self, target: &'a str) -> usize {
+        if let Some(cached) = self.construction_cache.borrow().get(target) {
             return *cached;
         }
 
         let mut count = 0;
-        for pattern in self.available_patterns.clone().iter() {
+        for pattern in self.available_patterns.iter() {
             let pattern = *pattern;
             if target.starts_with(pattern) {
                 count += self.construction_counts(&target[pattern.len()..]);
             }
         }
 
-        self.construction_cache.insert(target, count);
+        self.construction_cache.borrow_mut().insert(target, count);
 
         count
     }
 
     fn do_solve(&mut self) -> (usize, usize) {
-        self.construction_cache.insert("", 1);
+        self.construction_cache.borrow_mut().insert("", 1);
         let mut possible = 0;
         let mut permutations = 0;
         for target in self.requested.clone().iter() {
@@ -59,9 +60,9 @@ fn parse(input: &str) -> IResult<&str, OnsenPatterns> {
     Ok((
         rest,
         OnsenPatterns {
-            available_patterns: Rc::new(available_patterns),
-            requested: Rc::new(requested),
-            construction_cache: HashMap::new()
+            available_patterns,
+            requested,
+            construction_cache: RefCell::new(HashMap::new())
         },
     ))
 }
