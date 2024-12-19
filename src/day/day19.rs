@@ -1,12 +1,10 @@
 use std::cell::RefCell;
-use std::collections::HashMap;
-use std::rc::Rc;
 use fxhash::FxHashMap;
 use crate::ui::UIWrite;
 use crate::*;
-use nom::bytes::complete::{tag, take_while, take_while1};
+use nom::bytes::complete::{tag, take_while1};
 use nom::character::complete::line_ending;
-use nom::multi::{many1, separated_list1};
+use nom::multi::separated_list1;
 use nom::IResult;
 
 #[derive(Debug)]
@@ -63,7 +61,7 @@ fn parse(input: &str) -> IResult<&str, OnsenPatterns> {
         OnsenPatterns {
             available_patterns,
             requested,
-            construction_cache: RefCell::new(FxHashMap::default())
+            construction_cache: RefCell::default()
         },
     ))
 }

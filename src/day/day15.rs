@@ -1,4 +1,3 @@
-use std::collections::HashSet;
 use crate::collections::{CompassDirection, Index2D};
 use crate::day::{nom_parsed_bytes, parse_graphical_input};
 use crate::*;
