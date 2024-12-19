@@ -4,13 +4,13 @@ use crate::day::{nom_parsed_bytes, parse_graphical_input};
 use crate::*;
 use nom::bytes::complete::take_until;
 use nom::{AsBytes, IResult};
-use std::mem::swap;
 use std::rc::Rc;
+use fxhash::FxHashSet;
 
 #[derive(Debug, Clone)]
 struct Day15 {
-    boulders: HashSet<Index2D>,
-    walls: HashSet<Index2D>,
+    boulders: FxHashSet<Index2D>,
+    walls: FxHashSet<Index2D>,
     player: Index2D,
     moves: Rc<Vec<CompassDirection>>,
 }
@@ -209,9 +209,9 @@ impl Day15 {
 }
 
 
-fn parse_maze(input: &[u8]) -> (HashSet<Index2D>, HashSet<Index2D>, Index2D) {
-    let mut boulders = HashSet::new();
-    let mut walls = HashSet::new();
+fn parse_maze(input: &[u8]) -> (FxHashSet<Index2D>, FxHashSet<Index2D>, Index2D) {
+    let mut boulders = FxHashSet::default();
+    let mut walls = FxHashSet::default();
     let mut player= Index2D::IMPLAUSIBLE;
     parse_graphical_input(input, |byte, idx| {
         match byte {

@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::mem::swap;
+use fxhash::FxHashMap;
 use nom::bytes::complete::tag;
 use nom::combinator::map;
 use nom::IResult;
@@ -10,12 +11,12 @@ use crate::parse_helpers::parse_unsigned_nr_bytes;
 
 #[derive(Debug)]
 struct Day11 {
-    frequencies: HashMap<u64, usize>
+    frequencies: FxHashMap<u64, usize>
 }
 
 impl Day11 {
     fn apply_blink(&mut self) {
-        let mut temp = HashMap::new();
+        let mut temp = FxHashMap::default();
         swap(&mut temp, &mut self.frequencies);
 
         for (k, v) in temp {
@@ -37,7 +38,7 @@ impl Day11 {
 fn parse(input: &[u8]) -> IResult<&[u8], Day11> {
     map(separated_list1(tag(b" "), parse_unsigned_nr_bytes::<u64>),
         |input|{
-            let mut frequencies = HashMap::new();
+            let mut frequencies = FxHashMap::default();
             for nr in input {
                 *frequencies.entry(nr).or_default() += 1;
             }

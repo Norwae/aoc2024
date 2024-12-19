@@ -1,4 +1,5 @@
 use std::collections::HashSet;
+use fxhash::FxHashSet;
 use crate::*;
 use crate::collections::{ArrayBag, Index2D, IndexMap, Location2D};
 use crate::day::parse_graphical_input;
@@ -22,8 +23,8 @@ fn part1(input: Day8) -> String {
         location.row <= input.terminus.row &&
         location.column <= input.terminus.column;
 
-    let mut single_distance_outputs = HashSet::new();
-    let mut any_distance_outputs = HashSet::new();
+    let mut single_distance_outputs = FxHashSet::default();
+    let mut any_distance_outputs = FxHashSet::default();
 
     for (_, antennae) in input.locations.iter() {
         for antenna1 in antennae.as_ref() {

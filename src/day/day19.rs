@@ -1,6 +1,7 @@
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
+use fxhash::FxHashMap;
 use crate::ui::UIWrite;
 use crate::*;
 use nom::bytes::complete::{tag, take_while, take_while1};
@@ -12,7 +13,7 @@ use nom::IResult;
 struct OnsenPatterns<'a> {
     available_patterns: Vec<&'a str>,
     requested: Vec<&'a str>,
-    construction_cache: RefCell<HashMap<&'a str, usize>>
+    construction_cache: RefCell<FxHashMap<&'a str, usize>>
 }
 
 impl <'a> OnsenPatterns<'a> {
@@ -62,7 +63,7 @@ fn parse(input: &str) -> IResult<&str, OnsenPatterns> {
         OnsenPatterns {
             available_patterns,
             requested,
-            construction_cache: RefCell::new(HashMap::new())
+            construction_cache: RefCell::new(FxHashMap::default())
         },
     ))
 }

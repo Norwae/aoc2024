@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet};
+use fxhash::{FxHashMap, FxHashSet};
 use crate::*;
 use crate::collections::{ArrayBag, CompassDirection, Index2D, IndexMap};
 use crate::day::parse_graphical_input;
@@ -24,7 +24,7 @@ struct Day6 {
     initial_guard: GuardPosition,
     obstacles_per_row: IndexMap<ArrayBag<usize, 32>, 256>,
     obstacles_per_column: IndexMap<ArrayBag<usize, 32>, 256>,
-    visited: HashMap<Index2D, ArrayBag<CompassDirection, 4>>,
+    visited: FxHashMap<Index2D, ArrayBag<CompassDirection, 4>>,
     max_row: usize,
     max_column: usize,
 }
@@ -134,7 +134,7 @@ fn part1(day: &mut Day6) -> usize {
 
 fn check_for_circle(input: &Day6) -> bool {
     let mut cursor = input.initial_guard.clone();
-    let mut seen = HashSet::new();
+    let mut seen = FxHashSet::default();
 
     while let Ok(obstacle) = input.find_next_obstacle(&cursor) {
         let turning_point = obstacle - cursor.facing;

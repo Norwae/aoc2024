@@ -19,4 +19,5 @@ lazy_static = "1.5"
 rand = "0.9.0-beta.1"
 nom = "7.1.3"
 
+fxhash = "0.2.1"
 pathfinding = "4.12"
