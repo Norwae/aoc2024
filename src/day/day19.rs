@@ -37,7 +37,7 @@ impl <'a> OnsenPatterns<'a> {
         self.construction_cache.borrow_mut().insert("", 1);
         let mut possible = 0;
         let mut permutations = 0;
-        for target in self.requested.clone().iter() {
+        for target in self.requested.iter() {
             let permutations_found = self.construction_counts(target);
             permutations += permutations_found;
             possible += if permutations_found > 0 { 1 } else { 0 };
