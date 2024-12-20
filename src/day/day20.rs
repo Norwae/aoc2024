@@ -1,9 +1,7 @@
-use crate::collections::{ArrayBag, CompassDirection, Index2D, Vec2D};
-use crate::day::{parse_graphical_input, parse_graphical_input_raw};
+use crate::collections::{CompassDirection, Index2D, Vec2D};
+use crate::day::parse_graphical_input_raw;
 use crate::*;
-use fxhash::{FxBuildHasher, FxHashSet};
-use pathfinding::prelude::{astar, astar_bag, dijkstra, yen, AstarSolution};
-use std::collections::{HashSet, VecDeque};
+use std::collections::{VecDeque};
 
 #[derive(Debug)]
 struct Maze {
