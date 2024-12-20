@@ -550,6 +550,10 @@ impl<T> Vec2D<T> {
         self.storage.as_slice()
     }
 
+    pub fn len(&self) -> usize {
+        self.storage.len()
+    }
+
     pub fn extend_from(&mut self, other: Vec<T>) {
         assert_eq!(self.row_length, other.len());
         self.storage.extend(other);

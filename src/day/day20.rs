@@ -1,17 +1,19 @@
 use crate::collections::{ArrayBag, CompassDirection, Index2D, Vec2D};
-use crate::day::day20::StepType::AfterCheatFair;
 use crate::day::{parse_graphical_input, parse_graphical_input_raw};
 use crate::*;
 use fxhash::{FxBuildHasher, FxHashSet};
 use pathfinding::prelude::{astar, astar_bag, dijkstra, yen, AstarSolution};
-use std::collections::HashSet;
+use std::collections::{HashSet, VecDeque};
 
 #[derive(Debug)]
 struct Maze {
     is_wall_at: Vec2D<bool>,
+    cost_to_position: Vec2D<usize>,
     start: Index2D,
     end: Index2D,
 }
+
+
 fn parse(input: &[u8]) -> Result<Maze, !> {
     let mut buffer = Vec::with_capacity(input.len());
     let mut start = Index2D::IMPLAUSIBLE;
@@ -42,66 +44,65 @@ fn parse(input: &[u8]) -> Result<Maze, !> {
         false
     });
     let is_wall_at = Vec2D::new_from_flat(buffer, row_length);
+    let cost_to_position = Vec2D::new_from_flat(vec![usize::MAX; is_wall_at.len()], row_length);
 
     Ok(Maze {
         is_wall_at,
         start,
         end,
+        cost_to_position,
     })
 }
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
-enum StepType {
-    BeforeCheatFair,
-    Teleport,
-    AfterCheatFair,
-}
+fn solve(mut maze: Maze) -> String {
+    maze.cost_to_position[maze.end] = 0;
+    let mut queue = VecDeque::new();
+    queue.push_back(maze.end);
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
-struct BannedTeleport(Index2D, Index2D);
-
-fn solve1(maze: Maze) -> usize {
-    let (_, fair_cost) = astar(
-        &maze.start,
-        |idx: &Index2D| {
-            let mut array = ArrayBag::<_, 4>::default();
-            for dir in CompassDirection::ALL {
-                if !maze.is_wall_at[*idx + dir] {
-                    array.insert((*idx + dir, 1usize))
-                }
+    while let Some(next) = queue.pop_front() {
+        let cost = maze.cost_to_position[next];
+        for d in CompassDirection::ALL {
+            let step = next + d;
+            if !maze.is_wall_at[step] && maze.cost_to_position[step] == usize::MAX {
+                maze.cost_to_position[step] = cost + 1;
+                queue.push_back(step);
             }
-            array
-        },
-        |idx| idx.manhattan_distance(maze.end),
-        |idx| *idx == maze.end,
-    )
-    .unwrap();
-
-    let mut cheat_count_better_than_threshold = 0;
-    let threshold = 99;
-    let mut banlist = FxHashSet::default();
-    while let Some((paths, cheating_cost)) = run_with_cheat(&maze, &banlist) {
-        if cheating_cost < fair_cost - threshold {
-            for path in paths {
-                cheat_count_better_than_threshold += 1;
-                let teleport_idx = path
-                    .iter()
-                    .position(|it| it.0 == StepType::Teleport)
-                    .unwrap();
-                banlist.insert(BannedTeleport(
-                    path[teleport_idx - 1].1,
-                    path[teleport_idx].1,
-                ));
-            }
-            dbg!(cheat_count_better_than_threshold, cheating_cost, fair_cost);
-        } else {
-            break;
         }
     }
-    cheat_count_better_than_threshold
+
+    let mut target_buffer = [Index2D::IMPLAUSIBLE; 840];
+    let mut cheating_options_long = 0;
+    let mut cheating_options_short = 0;
+
+    for source in maze.cost_to_position.indices() {
+        let source_cost = maze.cost_to_position[source];
+        if source_cost == usize::MAX {
+            continue
+        }
+        let targets = teleport_targets(source, &mut target_buffer, 20);
+        for target in targets {
+            let jump_distance = source.manhattan_distance(*target);
+            if maze.cost_to_position.validate_index(*target) {
+                let target_cost = maze.cost_to_position[*target];
+                if target_cost != usize::MAX {
+                    if target_cost < source_cost {
+                        let saved = source_cost - target_cost - jump_distance;
+                        if saved >= 100 {
+                            cheating_options_long += 1;
+                            if jump_distance <= 2 {
+                                cheating_options_short += 1;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    format!("Short: {cheating_options_short}, Long: {cheating_options_long}")
 }
 
-fn teleport_targets(source: Index2D, target: &mut [Index2D]) -> &[Index2D] {
+fn teleport_targets(source: Index2D, target: &mut [Index2D], n: usize) -> &[Index2D] {
     let mut top = 0;
     let mut insert_if_plausible = |idx: Index2D| {
         if idx.plausible() {
@@ -110,71 +111,18 @@ fn teleport_targets(source: Index2D, target: &mut [Index2D]) -> &[Index2D] {
         }
     };
 
-    for delta_1 in 0usize..=20 {
-        for delta_2 in 0..=(20 - delta_1) {
-            insert_if_plausible(
-                source
-                    .move_by(delta_1, CompassDirection::NORTH)
-                    .move_by(delta_2, CompassDirection::EAST),
-            );
-            insert_if_plausible(
-                source
-                    .move_by(delta_1, CompassDirection::NORTH)
-                    .move_by(delta_2, CompassDirection::WEST),
-            );
-            insert_if_plausible(
-                source
-                    .move_by(delta_1, CompassDirection::SOUTH)
-                    .move_by(delta_2, CompassDirection::EAST),
-            );
-            insert_if_plausible(
-                source
-                    .move_by(delta_1, CompassDirection::SOUTH)
-                    .move_by(delta_2, CompassDirection::WEST),
-            );
+    for delta_1 in 1usize..=n {
+        for d in CompassDirection::ALL {
+            let base = source.move_by(delta_1, d);
+            insert_if_plausible(base);
+            let right = d.turn_right();
+            for delta_2 in 1usize..=(n - delta_1) {
+                insert_if_plausible(base.move_by(delta_2, right));
+            }
         }
     }
 
     &target[..top]
 }
 
-fn run_with_cheat(
-    maze: &Maze,
-    banned_cheats: &HashSet<BannedTeleport, FxBuildHasher>,
-) -> Option<(AstarSolution<(StepType, Index2D)>, usize)> {
-    let mut buffer = [Index2D::IMPLAUSIBLE; 1600];
-    astar_bag(
-        &(StepType::BeforeCheatFair, maze.start),
-        |(state, from)| {
-            let is_before_cheat = *state == StepType::BeforeCheatFair;
-            let next_type = if is_before_cheat {
-                StepType::BeforeCheatFair
-            } else {
-                AfterCheatFair
-            };
-            let mut bag = ArrayBag::<_, 1700>::default();
-            for dir in CompassDirection::ALL {
-                if !maze.is_wall_at[*from + dir] {
-                    bag.insert(((next_type, *from + dir), 1usize))
-                }
-            }
-
-            if is_before_cheat {
-                bag.extend(
-                    teleport_targets(*from, &mut buffer)
-                        .into_iter()
-                        .cloned()
-                        .filter(|it| maze.is_wall_at.validate_index(*it) && !maze.is_wall_at[*it])
-                        .filter(|to| !banned_cheats.contains(&BannedTeleport(*from, *to)))
-                        .map(|idx| ((StepType::Teleport, idx), from.manhattan_distance(idx))),
-                );
-            }
-
-            bag
-        },
-        |(_, idx)| idx.manhattan_distance(maze.end),
-        |(_, idx)| *idx == maze.end,
-    )
-}
-
-parsed_day!(parse, solve1);
+parsed_day!(parse, solve);
