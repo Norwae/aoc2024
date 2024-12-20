@@ -145,6 +145,12 @@ impl<T, const N: usize> ArrayBag<T, N> {
         self.storage[slot].write(elem);
         self.empty_slot += 1;
     }
+    
+    pub fn extend<I: IntoIterator<Item = T>>(&mut self, iter: I) {
+        for elem in iter {
+            self.insert(elem);
+        }
+    }
 }
 
 impl<T, const N: usize> Drop for ArrayBag<T, N> {
