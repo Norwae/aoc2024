@@ -12,15 +12,16 @@ fn step(mut next: usize) -> usize {
 }
 
 #[derive(Debug, Default)]
-struct DeltaKey([u8; 5]);
+struct DeltaKey(u64);
 
 impl DeltaKey {
     const SLICE_LENGTH: usize = 1 << 20;
     fn slice_key(&self) -> usize {
-        let d0 = (9 + self.0[1] - self.0[0]) as usize;
-        let d1 = (9 + self.0[2] - self.0[1]) as usize;
-        let d2 = (9 + self.0[3] - self.0[2]) as usize;
-        let d3 = (9 + self.0[4] - self.0[3]) as usize;
+        let bytes = self.0.to_le_bytes();
+        let d0 = (9 + bytes[1] - bytes[0]) as usize;
+        let d1 = (9 + bytes[2] - bytes[1]) as usize;
+        let d2 = (9 + bytes[3] - bytes[2]) as usize;
+        let d3 = (9 + bytes[4] - bytes[3]) as usize;
 
 
         (d0 << 15) | (d1 << 10) | (d2 << 5) | d3
@@ -29,8 +30,7 @@ impl DeltaKey {
 
 impl AddAssign<u8> for DeltaKey {
     fn add_assign(&mut self, price: u8) {
-        self.0.copy_within(1.., 0);
-        self.0[4] = price;
+        self.0 = (self.0 << 8) | price as u64;
     }
 }
 
