@@ -45,7 +45,7 @@ fn part1(input: &mut WorkingData) -> usize {
     input.three_cliques.len()
 }
 
-fn grow_clique_1<'a, 'b>(clique: &'b mut FxHashSet<&'a str>, edges: &FxHashMap<&'a str, FxHashSet<&'a str>>) -> bool {
+fn find_extension_node<'a, 'b>(clique: &'b FxHashSet<&'a str>, edges: &FxHashMap<&'a str, FxHashSet<&'a str>>) -> Option<&'a str> {
     let one_node = clique.iter().next().unwrap();
     let potential_members = edges.get(one_node).unwrap();
     for grow_candidate in potential_members {
@@ -53,12 +53,11 @@ fn grow_clique_1<'a, 'b>(clique: &'b mut FxHashSet<&'a str>, edges: &FxHashMap<&
             edges.get(node).unwrap().contains(grow_candidate)
         }) {
             // all current clique members contain the node, add it
-            clique.insert(grow_candidate);
-            return true;
+            return Some(grow_candidate);
         }
     }
 
-    false
+    None
 }
 
 fn part2(input: WorkingData) -> String {
@@ -71,10 +70,8 @@ fn part2(input: WorkingData) -> String {
             continue;
         }
 
-        loop {
-            if !grow_clique_1(&mut clique_set, &input.edges) {
-                break;
-            }
+        while let Some(extension) = find_extension_node(&clique_set, &input.edges) {
+            clique_set.insert(extension);
         }
 
         if clique_set.len() > largest_set.len() {
