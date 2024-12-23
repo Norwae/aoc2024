@@ -284,13 +284,17 @@ impl CompassDirection {
         }
     }
 }
-
+/**
+2D Indices, unconstrained for arbitrary movement - need to be converted to Index2D for usage in
+Vec2D access
+*/
 #[derive(Debug, Copy, Clone, Default, Eq, PartialEq, Hash)]
 pub struct Location2D {
     pub row: i64,
     pub column: i64,
 }
 
+/** 2D indices, constrained to potentially valid ones - so no negative indices even possible */
 #[derive(Debug, Copy, Clone, Default, Eq, PartialEq, Hash)]
 pub struct Index2D {
     pub row: usize,

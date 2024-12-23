@@ -7,13 +7,13 @@ edition = "2021"
 strip = "symbols"
 
 [features]
-gtk_ui = [ "gtk4"]
+# gtk_ui = [ "gtk4"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 clap = { version = "4.5", features = ["derive"] }
-gtk4 = {  version = "0.9", optional = true }
+# gtk4 = {  version = "0.9", optional = true }
 threadpool = "1.8"
 lazy_static = "1.5"
 rand = "0.9.0-beta.1"
