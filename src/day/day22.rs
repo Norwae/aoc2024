@@ -37,12 +37,12 @@ impl AddAssign<u8> for DeltaKey {
 struct Solution {
     sum: usize,
     best_profit: u16,
-    memory: Vec<u16>
+    sums_per_key: Vec<u16>
 }
 
 impl Default for Solution {
     fn default() -> Self {
-        Self { sum: 0, best_profit: 0, memory: vec![0u16; DeltaKey::SLICE_LENGTH] }
+        Self { sum: 0, best_profit: 0, sums_per_key: vec![0u16; DeltaKey::SLICE_LENGTH] }
     }
 }
 
@@ -72,8 +72,8 @@ fn monkey_nr_sum(data: &mut Solution, mut next: usize) {
         let key = dk.slice_key();
         if !seen[key] {
             seen[key] = true;
-            let next = data.memory[key] + price as u16;
-            data.memory[key] = next;
+            let next = data.sums_per_key[key] + price as u16;
+            data.sums_per_key[key] = next;
             if next > data.best_profit {
                 data.best_profit = next;
             }
