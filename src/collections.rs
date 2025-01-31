@@ -1,5 +1,5 @@
 use std::fmt::{Debug, Formatter};
-use std::mem::MaybeUninit;
+use std::mem::{ManuallyDrop, MaybeUninit};
 use std::ops::{Add, AddAssign, Index, IndexMut, Sub, SubAssign};
 
 #[derive(Debug, Clone)]
@@ -198,7 +198,7 @@ impl<T: Clone, const N: usize> Clone for ArrayBag<T, N> {
 
 pub struct ArrayBagIter<T, const N: usize> {
     head: usize,
-    bag: ArrayBag<T, N>
+    bag: ManuallyDrop<ArrayBag<T, N>>
 }
 
 
@@ -243,7 +243,7 @@ impl <T, const N: usize> IntoIterator for ArrayBag<T, N> {
     fn into_iter(self) -> Self::IntoIter {
         ArrayBagIter {
             head: 0,
-            bag: self,
+            bag: ManuallyDrop::new(self),
         }
     }
 }
